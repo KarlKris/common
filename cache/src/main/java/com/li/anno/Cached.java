@@ -1,4 +1,4 @@
-package com.li.cache.anno;
+package com.li.anno;
 
 /**
  *  缓存注解
