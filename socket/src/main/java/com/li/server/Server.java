@@ -8,7 +8,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -16,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
  * @Author li-yuanwen
  * @Date 2020/4/11 3:58
  */
-@Slf4j
 public class Server {
 
     // 端口号
@@ -28,7 +26,6 @@ public class Server {
 
     // Channel
     private Channel channel;
-
 
 
 
@@ -74,6 +71,11 @@ public class Server {
         // 释放线程池资源
         boss.shutdownGracefully();
         workers.shutdownGracefully();
+    }
+
+
+    public static void main(String[] args) {
+        new Server().start();
     }
 
 }
