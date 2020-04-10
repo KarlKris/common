@@ -25,6 +25,5 @@ public class NettyServerMessageHandler extends ChannelInitializer<SocketChannel>
 
         pipeline.addLast(new MessageDispatcher());
 
-//        pipeline.addLast(new ProtobufDecoder(SubscribeReqProto.SubscribeReq.get))
     }
 }

@@ -8,6 +8,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -15,6 +16,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
  * @Author li-yuanwen
  * @Date 2020/4/11 3:58
  */
+@Slf4j
 public class Server {
 
     // 端口号
@@ -59,6 +61,7 @@ public class Server {
 
         // 绑定服务器Channel
         channel = future.channel();
+        log.debug("-------服务器启动成功---------");
     }
 
     /**
