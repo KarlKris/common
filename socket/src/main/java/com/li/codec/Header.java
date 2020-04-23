@@ -2,6 +2,7 @@ package com.li.codec;
 
 import lombok.Data;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -15,7 +16,7 @@ public class Header {
     /**
      * 校验码
      */
-    private int crcCode;
+    private int crcCode = 0xabef0101;
 
     /**
      * 消息长度(包括消息头和消息体)
@@ -40,7 +41,7 @@ public class Header {
     /**
      * 可选字段,用于扩展消息头
      */
-    private Map<String, Object> attachment;
+    private Map<String, Object> attachment = new HashMap<>();
 
     @Override
     public String toString() {
@@ -52,5 +53,33 @@ public class Header {
                 ", priority=" + priority +
                 ", attachment=" + attachment +
                 '}';
+    }
+
+    // 登录
+
+    public static Header getLoginAuthHeader() {
+        Header header = new Header();
+        header.setType(MessageType.LOGIN_REQ.getValue());
+        return header;
+    }
+
+    public static Header getLoginAuthRespHeader() {
+        Header header = new Header();
+        header.setType(MessageType.LOGIN_RESP.getValue());
+        return header;
+    }
+
+    // 心跳检测
+
+    public static Header getHeartBeatReqHeader() {
+        Header header = new Header();
+        header.setType(MessageType.HEART_BEAT_REQ.getValue());
+        return header;
+    }
+
+    public static Header getHeartBeatRespHeader() {
+        Header header = new Header();
+        header.setType(MessageType.HEART_BEAT_RESP.getValue());
+        return header;
     }
 }

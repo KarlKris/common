@@ -8,6 +8,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -44,7 +45,7 @@ public class Server {
     /**
      * 服务开启
      */
-    public void start(){
+    public void start() throws InterruptedException {
         init();
 
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -57,11 +58,11 @@ public class Server {
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .childHandler(new NettyServerMessageHandler());
         // 绑定端口号
-        ChannelFuture future = bootstrap.bind(PORT);
+        ChannelFuture future = bootstrap.bind(PORT).sync();
 
         // 绑定服务器Channel
         channel = future.channel();
-        log.debug("-------服务器启动成功---------");
+        log.info("-------服务器启动成功---------");
     }
 
     /**
@@ -77,7 +78,7 @@ public class Server {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         new Server().start();
     }
 

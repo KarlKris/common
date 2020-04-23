@@ -17,7 +17,7 @@ public class MarshallingCoderFactory {
 
         final MarshallingConfiguration configuration = new MarshallingConfiguration();
 
-        configuration.setVersion(8);
+        configuration.setVersion(5);
 
         return factory.createMarshaller(configuration);
     }
@@ -27,7 +27,7 @@ public class MarshallingCoderFactory {
 
         final MarshallingConfiguration configuration = new MarshallingConfiguration();
 
-        configuration.setVersion(8);
+        configuration.setVersion(5);
 
         return factory.createUnmarshaller(configuration);
     }
