@@ -1,9 +1,6 @@
 package com.li.codec;
 
-import com.li.utils.MarshallingCoderFactory;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +64,7 @@ public class NettyMessageEncoder extends MessageToByteEncoder<NettyMessage> {
         // 在心跳检测中  0 = 26 - 4 - 4 - 18，所以这里长度要减去校验码字节数4和长度字节数4
         // https://www.jianshu.com/p/64dc7ee8c713
         int i = byteBuf.readableBytes();
+        // ByteBuf index为1个字节,这里长度字段是从第4字节开始的
         byteBuf.setInt(4, i - 8);
 
         log.info("encoder-[{}]", byteBuf);

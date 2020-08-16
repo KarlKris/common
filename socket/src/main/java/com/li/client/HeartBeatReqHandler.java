@@ -7,6 +7,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.TimeUnit;
@@ -25,19 +27,28 @@ public class HeartBeatReqHandler extends ChannelDuplexHandler {
         NettyMessage message = (NettyMessage) msg;
         Header header = message.getHeader();
 
-        if (header != null && header.getType() == MessageType.LOGIN_RESP.getValue()) {
-            // 成功登录后,每个0.5s向服务端发送心跳检测
-            ctx.executor().scheduleAtFixedRate(() -> {
-                NettyMessage m = NettyMessage.getHeartBeatReqMessage();
-                ctx.writeAndFlush(m);
-            }, 0, 1000, TimeUnit.MILLISECONDS);
-        } else if (header != null && header.getType() == MessageType.HEART_BEAT_RESP.getValue()) {
+        if (header != null && header.getType() == MessageType.HEART_BEAT_RESP.getValue()) {
             // 心跳响应
             log.info("[客户端]收到服务端的心跳响应消息-{}", message);
         } else {
             ctx.fireChannelRead(msg);
         }
     }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        log.info("[客户端]心跳检测");
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent event = (IdleStateEvent) evt;
+            if (event.state()== IdleState.WRITER_IDLE){
+                NettyMessage m = NettyMessage.getHeartBeatReqMessage();
+                ctx.writeAndFlush(m);
+            }
+        }else {
+            super.userEventTriggered(ctx, evt);
+        }
+    }
+
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {

@@ -20,8 +20,8 @@ import java.util.concurrent.*;
 @Slf4j
 public class Client {
 
-    public static final int PORT = 65098;
-    public static final String HOST = "192.168.11.74";
+    public static final int PORT = 11028;
+    public static final String HOST = "192.168.11.83";
 
     private EventLoopGroup group;
     private Channel channel;
@@ -41,9 +41,10 @@ public class Client {
             b.group(group)
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
+                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1500)
                     .handler(new NettyClientMessageHandler());
 
-            ChannelFuture future = b.connect(HOST, PORT);
+            ChannelFuture future = b.connect(HOST, PORT).sync();
             channel = future.channel();
             log.info("----------客户端连接-[{}]", HOST + ":" + PORT);
 
@@ -51,18 +52,21 @@ public class Client {
         } finally {
             // 先释放资源，在重连
             group.shutdownGracefully();
-            executorService.execute(() -> {
-                try {
-                    while (connectNum++ < MAX_CONNECT_NUM) {
-                        TimeUnit.SECONDS.sleep(1);
-                        connect();
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            });
+            executorService.execute(this::doExecuteReconnect);
         }
     }
+
+    private void doExecuteReconnect() {
+        if (connectNum++ >= MAX_CONNECT_NUM) {
+            return;
+        }
+        try {
+            connect();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
     public static void main(String[] args) throws InterruptedException {

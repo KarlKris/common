@@ -29,13 +29,9 @@ public class ClientHandler extends ChannelDuplexHandler {
         ctx.writeAndFlush(buf);
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf tempBuf = (ByteBuf) msg;
-        byte[] req = new byte[tempBuf.readableBytes()];
-        tempBuf.readBytes(req);
 
-        String s = new String(req, "UTF-8");
-        log.debug(s);
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.error("[客户端]发生异常", cause);
     }
 }

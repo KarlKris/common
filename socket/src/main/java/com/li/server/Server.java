@@ -2,14 +2,11 @@ package com.li.server;
 
 import com.li.handler.NettyServerMessageHandler;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
+import sun.misc.Signal;
 
 
 /**
@@ -21,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Server {
 
     // 端口号
-    public static final int PORT = 65098;
+    public static final int PORT = 11028;
 
     // NIO 线程组
     private EventLoopGroup boss;
@@ -31,11 +28,10 @@ public class Server {
     private Channel channel;
 
 
-
     /**
      * 启动初始化
      */
-    private void init(){
+    private void init() {
         // 配置服务端线程组
         boss = new NioEventLoopGroup();
         workers = new NioEventLoopGroup();
@@ -62,16 +58,20 @@ public class Server {
 
         // 绑定服务器Channel
         channel = future.channel();
+
         log.info("-------服务器启动成功---------");
+
+        channel.closeFuture().addListener((ChannelFutureListener) future1 -> {
+            log.warn("链路-[{}]关闭", channel.toString());
+            stop();
+        });
     }
 
     /**
      * 服务关闭
      */
-    public void stop(){
-        if (channel != null){
-            channel.closeFuture().awaitUninterruptibly();
-        }
+    public void stop() {
+        log.warn("关闭stop");
         // 释放线程池资源
         boss.shutdownGracefully();
         workers.shutdownGracefully();

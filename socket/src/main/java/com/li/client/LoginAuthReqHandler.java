@@ -23,6 +23,8 @@ public class LoginAuthReqHandler extends ChannelDuplexHandler {
         log.info("[客户端]三次握手成功后发送安全认证请求");
         // 三次握手成功后发送安全认证请求
         ctx.writeAndFlush(NettyMessage.getLoginAuthReqMessage());
+
+        ctx.fireChannelActive();
     }
 
     @Override
@@ -36,6 +38,7 @@ public class LoginAuthReqHandler extends ChannelDuplexHandler {
             if (body != (byte) 0) {
                 ctx.close();
             } else {
+                log.info("[客户端]收到验证成功消息");
                 ctx.fireChannelRead(msg);
             }
         } else {
