@@ -18,7 +18,9 @@ import sun.misc.Signal;
 public class Server {
 
     // 端口号
-    public static final int PORT = 11028;
+    public static final int[] PORT = new int[] {
+            11028
+    };
 
     // NIO 线程组
     private EventLoopGroup boss;
@@ -33,7 +35,7 @@ public class Server {
      */
     private void init() {
         // 配置服务端线程组
-        boss = new NioEventLoopGroup();
+        boss = new NioEventLoopGroup(PORT.length);
         workers = new NioEventLoopGroup();
     }
 
@@ -54,18 +56,21 @@ public class Server {
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .childHandler(new NettyServerMessageHandler());
         // 绑定端口号
-        ChannelFuture future = bootstrap.bind(PORT).sync();
+        for (int port : PORT) {
+            ChannelFuture future = bootstrap.bind(port).sync();
 
-        // 绑定服务器Channel
-        channel = future.channel();
+            // 绑定服务器Channel
+            channel = future.channel();
 
-        log.info("-------服务器启动成功---------");
+            log.info("-------服务器启动成功["+ port +"]---------");
 
-        channel.closeFuture().addListener((ChannelFutureListener) future1 -> {
-            log.warn("链路-[{}]关闭", channel.toString());
-            stop();
-        });
+            channel.closeFuture().addListener((ChannelFutureListener) future1 -> {
+                log.warn("端口-[{}]链路-[{}]关闭", port, channel.toString());
+                stop();
+            });
+        }
     }
+
 
     /**
      * 服务关闭
