@@ -1,17 +1,15 @@
 package com.li.client;
 
-import com.li.codec.Header;
 import com.li.codec.MessageType;
 import com.li.codec.NettyMessage;
+import com.li.proto.MessageProto;
+import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Description 心跳检测
@@ -24,12 +22,13 @@ public class HeartBeatReqHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        NettyMessage message = (NettyMessage) msg;
-        Header header = message.getHeader();
+//        NettyMessage message = (NettyMessage) msg;
+        MessageProto.Message message = (MessageProto.Message) msg;
+        MessageProto.Header header = message.getHeader();
 
         if (header != null && header.getType() == MessageType.HEART_BEAT_RESP.getValue()) {
             // 心跳响应
-            log.info("[客户端]收到服务端的心跳响应消息-{}", message);
+
         } else {
             ctx.fireChannelRead(msg);
         }
@@ -40,11 +39,11 @@ public class HeartBeatReqHandler extends ChannelDuplexHandler {
         log.info("[客户端]心跳检测");
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
-            if (event.state()== IdleState.WRITER_IDLE){
-                NettyMessage m = NettyMessage.getHeartBeatReqMessage();
-                ctx.writeAndFlush(m);
+            if (event.state() == IdleState.WRITER_IDLE) {
+                MessageProto.Message message = MessageProtoFactory.createHeartBeatReqMessage();
+                ctx.writeAndFlush(message);
             }
-        }else {
+        } else {
             super.userEventTriggered(ctx, evt);
         }
     }

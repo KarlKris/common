@@ -26,4 +26,10 @@ public class MessageDispatcher extends ChannelDuplexHandler {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         log.info("MessageDispatcher---channelActive()");
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.error("出现未知异常,关闭channel", cause);
+        ctx.channel().close();
+    }
 }

@@ -1,29 +1,32 @@
 package com.li.handler;
 
-import com.li.codec.NettyMessageDecoder;
-import com.li.codec.NettyMessageEncoder;
+import com.li.proto.MessageProto;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.StringTokenizer;
+
+import static io.netty.buffer.Unpooled.wrappedBuffer;
 
 /**
  * @Description 协议选择处理器
@@ -109,18 +112,57 @@ public class ProtocolSelectorHandler extends ByteToMessageDecoder {
         //参数指的是contex_path 协议包长度限制
         ctx.pipeline().addAfter("idleStateHandler", "webSocketServerProtocolHandler", new WebSocketServerProtocolHandler("/"));
 
-        // 自定义的数据帧处理
-        ctx.pipeline().addAfter("idleStateHandler", "textWebSocketFrameHandler", new TextWebSocketFrameHandler());
+        ctx.pipeline().addAfter("idleStateHandler", "MessageToMessageDecoder", new MessageToMessageDecoder<WebSocketFrame>() {
+            @Override
+            protected void decode(ChannelHandlerContext ctx, WebSocketFrame msg, List<Object> out) throws Exception {
+                ByteBuf buf = msg.content();
+                out.add(buf);
+                buf.retain();
+            }
+        });
 
+        ctx.pipeline().addAfter("idleStateHandler", "MessageToMessageEncoder", new MessageToMessageEncoder<MessageProto.MessageOrBuilder>() {
+            @Override
+            protected void encode(ChannelHandlerContext ctx, MessageProto.MessageOrBuilder msg, List<Object> out) throws Exception {
+                ByteBuf buf = null;
+                if (msg instanceof MessageProto.Message) {
+                    buf = wrappedBuffer(((MessageProto.Message) msg).toByteArray());
+                }
+                if (msg instanceof MessageProto.Message.Builder) {
+                    buf = wrappedBuffer(((MessageProto.Message.Builder) msg).build().toByteArray());
+                }
+
+                // ==== 上面代码片段是拷贝自TCP ProtobufEncoder 源码 ====
+                // 然后下面再转成websocket二进制流，因为客户端不能直接解析protobuf编码生成的
+
+                WebSocketFrame frame = new BinaryWebSocketFrame(buf);
+                out.add(frame);
+            }
+        });
+
+        // 协议包解码时指定Protobuf字节数实例化为MessageProto.Message类型
+        ctx.pipeline().addLast("ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
+
+        // 自定义的数据帧处理
+//        ctx.pipeline().addAfter("idleStateHandler", "textWebSocketFrameHandler", new TextWebSocketFrameHandler());
+        ctx.pipeline().addLast("WebSocketMessageHandler", new WebSocketMessageHandler());
 
     }
 
     private void customizeAdd(ChannelHandlerContext ctx) throws IOException {
-        ctx.pipeline().addBefore("idleStateHandler", "MessageEncoder", new NettyMessageEncoder());
-        ctx.pipeline().addBefore("idleStateHandler", "MessageDecoder", new NettyMessageDecoder(1024 * 1024, 4, 4));
+//        ctx.pipeline().addBefore("idleStateHandler", "MessageEncoder", new NettyMessageEncoder());
+//        ctx.pipeline().addBefore("idleStateHandler", "MessageDecoder", new NettyMessageDecoder(1024 * 1024, 4, 4));
+
+        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
+        ctx.pipeline().addBefore("idleStateHandler", "ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
+        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
+        ctx.pipeline().addBefore("idleStateHandler", "ProtobufEncoder", new ProtobufEncoder());
+
         ctx.pipeline().addAfter("idleStateHandler", "LoginAuthRespHandler", new LoginAuthRespHandler());
         ctx.pipeline().addAfter("idleStateHandler", "HeartBeatHandler", new HeartBeatRespHandler());
         ctx.pipeline().addAfter("idleStateHandler", "readTimeoutHandler", new ReadTimeoutHandler(30));
+        // 业务逻辑处理
+        ctx.pipeline().addLast("MessageDispatcher", new MessageDispatcher());
     }
 
 }

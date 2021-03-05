@@ -3,7 +3,9 @@
 ### Example user template
 
 # IntelliJ project files
+target/
 .idea
 *.iml
 out
 gen
+

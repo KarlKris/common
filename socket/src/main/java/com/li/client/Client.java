@@ -1,5 +1,6 @@
 package com.li.client;
 
+import com.li.ssl.SSLMODE;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -58,6 +59,8 @@ public class Client {
 
     private void doExecuteReconnect() {
         if (connectNum++ >= MAX_CONNECT_NUM) {
+            // 关闭线程池
+            executorService.shutdown();
             return;
         }
         try {

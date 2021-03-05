@@ -1,14 +1,15 @@
 package com.li.handler;
 
-import com.li.codec.Header;
 import com.li.codec.MessageType;
 import com.li.codec.NettyMessage;
+import com.li.proto.MessageProto;
+import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -25,14 +26,16 @@ public class HeartBeatRespHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        NettyMessage message = (NettyMessage) msg;
-        Header header = message.getHeader();
+        MessageProto.Message message = (MessageProto.Message) msg;
+
+        MessageProto.Header header = message.getHeader();
 
         if (header != null && header.getType() == MessageType.HEART_BEAT_REQ.getValue()) {
-            log.info("[服务端]收到客户端心跳检测-{}", message);
+            MessageProto.Message resqMessage = MessageProtoFactory.createHeartBeatResqMessage();
+            ctx.writeAndFlush(resqMessage);
 
-            NettyMessage nettyMessage = NettyMessage.getHeartBeatResqMessage();
-            ctx.writeAndFlush(nettyMessage);
+            // 释放请求消息
+            ReferenceCountUtil.release(msg);
         }else {
             ctx.fireChannelRead(msg);
         }

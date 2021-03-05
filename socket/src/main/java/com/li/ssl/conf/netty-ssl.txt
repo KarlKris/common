@@ -1,0 +1,19 @@
+第一步：生成Netty服务端私钥和证书仓库命令
+keytool -genkey -alias ssl-secure -keysize 2048 -validity 365 -keyalg RSA -dname "CN=localhost" -keypass sslNetty -storepass sslNetty -keystore sslSecureServer.jks
+
+第二步：生成Netty服务端自签名证书
+keytool -export -alias ssl-secure -keystore sslSecureServer.jks -storepass sslNetty -file sslSecureServer.cer
+
+第三步：生成客户端的密钥对和证书仓库，用于将服务端的证书保存到客户端的授信证书仓库中
+keytool -genkey -alias ssl-secure-client -keysize 2048 -validity 365  -keyalg RSA -dname "CN=localhost" -keypass sslNetty  -storepass sslNetty -keystore sslSecureClient.jks
+
+第四步：将Netty服务端证书导入到客户端的证书仓库中
+keytool -import -trustcacerts -alias ssl-secure -file sslSecureServer.cer -storepass sslNetty -keystore sslSecureClient.jks
+
+如果你只做单向认证，则到此就可以结束了，如果是双向认证，则还需继续往下走
+
+第五步:生成客户端自签名证书
+keytool -export -alias ssl-secure-client -keystore sslSecureClient.jks -storepass sslNetty -file sslSecureClient.cer
+
+最后一步:将客户端的自签名证书导入到服务端的信任证书仓库中：
+keytool -import -trustcacerts -alias ssl-secure-client -file sslSecureClient.cer -storepass sslNetty -keystore sslSecureServer.jks
