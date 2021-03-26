@@ -1,18 +1,13 @@
 package com.li.handler;
 
-import com.li.codec.NettyMessageDecoder;
-import com.li.codec.NettyMessageEncoder;
+import com.li.session.MessageDispatcher;
+import com.li.session.SessionManager;
 import com.li.ssl.factory.SslContextFactory;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.SSLEngine;
@@ -28,6 +23,12 @@ public class NettyServerMessageHandler extends ChannelInitializer<SocketChannel>
 
     /** ssl模式 **/
     private String sslMode;
+
+    private final MessageDispatcher messageDispatcher = new MessageDispatcher();
+
+    private final SessionManager sessionManager = new SessionManager();
+
+    private final ServerMessageHandler messageHandler = new ServerMessageHandler(messageDispatcher, sessionManager);
 
     public NettyServerMessageHandler(String sslMode) {
         this.sslMode = sslMode;
@@ -49,8 +50,7 @@ public class NettyServerMessageHandler extends ChannelInitializer<SocketChannel>
         // 心跳检测
         pipeline.addLast("idleStateHandler", new IdleStateHandler(5, 0, 0, TimeUnit.SECONDS));
 
-
-        pipeline.addLast(new MessageDispatcher());
+        pipeline.addLast(messageHandler);
 
     }
 }

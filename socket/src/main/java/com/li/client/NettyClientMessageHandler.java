@@ -12,7 +12,6 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import org.springframework.util.StringUtils;
 
 import javax.net.ssl.SSLEngine;
 import java.util.concurrent.TimeUnit;
@@ -53,12 +52,12 @@ public class NettyClientMessageHandler extends ChannelInitializer<SocketChannel>
 
         pipeline.addLast("IdleStateHandler", new IdleStateHandler(0, 4, 0, TimeUnit.SECONDS));
 
-        pipeline.addLast("readTimeoutHandler", new ReadTimeoutHandler(30));
+        pipeline.addLast("ReadTimeoutHandler", new ReadTimeoutHandler(30));
+
+        pipeline.addLast("HeartBeatReqHandler", new HeartBeatReqHandler());
 
         pipeline.addLast("LoginAuthHandler", new LoginAuthReqHandler());
-        pipeline.addLast("HeartBeatHandler", new HeartBeatReqHandler());
 
-
-//        pipeline.addLast(new ClientHandler());
+        pipeline.addLast("ClientHandler", new ClientHandler());
     }
 }

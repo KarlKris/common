@@ -1,7 +1,6 @@
 package com.li.handler;
 
 import com.li.codec.MessageType;
-import com.li.codec.NettyMessage;
 import com.li.proto.MessageProto;
 import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;

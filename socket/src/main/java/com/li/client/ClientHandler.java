@@ -1,10 +1,13 @@
 package com.li.client;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import com.li.proto.MessageProto;
+import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Description 描述
@@ -14,21 +17,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ClientHandler extends ChannelDuplexHandler {
 
-    public static final String FIRST_MESSAGE = "Hello, Server";
-
-    private final ByteBuf buf;
-
-    public ClientHandler() {
-        byte[] bytes = FIRST_MESSAGE.getBytes();
-        buf = Unpooled.buffer(bytes.length);
-        buf.writeBytes(bytes);
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        ctx.executor().scheduleAtFixedRate(() -> {
+            log.info("------定时任务-------------");
+            ctx.writeAndFlush(MessageProtoFactory.createServiceReqMessage("service msg : " + new Random().nextInt(100)));
+        }, 0, 2, TimeUnit.SECONDS);
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(buf);
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        MessageProto.Message message = (MessageProto.Message) msg;
+        log.info("收到业务消息[{}]", message);
     }
-
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {

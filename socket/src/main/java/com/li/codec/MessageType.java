@@ -27,7 +27,15 @@ public enum MessageType {
      */
     HEART_BEAT_RESP((byte) 4),
 
-    ;
+    /**
+     * 业务请求消息
+     **/
+    REQUEST((byte) 5),
+
+    /**
+     * 业务响应消息
+     **/
+    RESPONSE((byte) 6);
 
     private byte value;
 

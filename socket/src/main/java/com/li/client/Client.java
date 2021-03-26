@@ -1,5 +1,6 @@
 package com.li.client;
 
+import com.li.proto.MessageProtoFactory;
 import com.li.ssl.SSLMODE;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -11,7 +12,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Description 客户端
@@ -43,7 +47,7 @@ public class Client {
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1500)
-                    .handler(new NettyClientMessageHandler());
+                    .handler(new NettyClientMessageHandler(SSLMODE.CSA.name()));
 
             ChannelFuture future = b.connect(HOST, PORT).sync();
             channel = future.channel();
@@ -54,6 +58,12 @@ public class Client {
             // 先释放资源，在重连
             group.shutdownGracefully();
             executorService.execute(this::doExecuteReconnect);
+        }
+    }
+
+    public void wirte(String msg) {
+        if (channel != null) {
+            channel.writeAndFlush(MessageProtoFactory.createServiceReqMessage(msg));
         }
     }
 

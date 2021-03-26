@@ -159,10 +159,8 @@ public class ProtocolSelectorHandler extends ByteToMessageDecoder {
         ctx.pipeline().addBefore("idleStateHandler", "ProtobufEncoder", new ProtobufEncoder());
 
         ctx.pipeline().addAfter("idleStateHandler", "LoginAuthRespHandler", new LoginAuthRespHandler());
-        ctx.pipeline().addAfter("idleStateHandler", "HeartBeatHandler", new HeartBeatRespHandler());
+        ctx.pipeline().addAfter("idleStateHandler", "HeartBeatRespHandler", new HeartBeatRespHandler());
         ctx.pipeline().addAfter("idleStateHandler", "readTimeoutHandler", new ReadTimeoutHandler(30));
-        // 业务逻辑处理
-        ctx.pipeline().addLast("MessageDispatcher", new MessageDispatcher());
     }
 
 }

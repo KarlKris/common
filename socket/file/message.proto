@@ -6,14 +6,10 @@ option java_outer_classname = "MessageProto"; //转换后的java源文件文件�
 message Message {
     Header header = 1; // 消息头
     bytes body = 2; // 消息体
-
 }
 
 message Header {
-    int32 crcCode = 1; //校验码
-    int32 length = 2; // 消息长度(包括消息头和消息体)
-    int64 sessionId = 3; // sessionId
-    int32 type = 4; // 消息类型
-    int32 priority = 5; // 消息优先级
-    map<string, bytes> attachment = 6; // 可选字段,用于扩展消息头
+    int32 type = 1; // 消息类型
+    int32 module = 2; //模块号
+    int32 command = 3; //命令号
 }

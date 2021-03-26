@@ -14,8 +14,6 @@ import java.nio.charset.StandardCharsets;
  */
 public class MessageProtoFactory {
 
-    private static final int CRC_CODE = 0xabef0101;
-
     private static byte[] encode(MessageProto.Message message) {
         return message.toByteArray();
     }
@@ -28,7 +26,6 @@ public class MessageProtoFactory {
         MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
 
         MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
-        headerBuilder.setCrcCode(CRC_CODE);
         headerBuilder.setType(MessageType.LOGIN_REQ.getValue());
         builder.setHeader(headerBuilder.build());
 
@@ -41,7 +38,6 @@ public class MessageProtoFactory {
         MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
 
         MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
-        headerBuilder.setCrcCode(CRC_CODE);
         headerBuilder.setType(MessageType.LOGIN_RESP.getValue());
 
         builder.setHeader(headerBuilder.build());
@@ -56,7 +52,6 @@ public class MessageProtoFactory {
         MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
 
         MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
-        headerBuilder.setCrcCode(CRC_CODE);
         headerBuilder.setType(MessageType.HEART_BEAT_REQ.getValue());
 
         builder.setHeader(headerBuilder.build());
@@ -68,7 +63,6 @@ public class MessageProtoFactory {
         MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
 
         MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
-        headerBuilder.setCrcCode(CRC_CODE);
         headerBuilder.setType(MessageType.HEART_BEAT_RESP.getValue());
 
         builder.setHeader(headerBuilder.build());
@@ -76,8 +70,30 @@ public class MessageProtoFactory {
         return builder.build();
     }
 
-    public static void main(String[] args) {
+    public static MessageProto.Message createServiceReqMessage(String msg) {
+        MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
 
+        MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
+        headerBuilder.setType(MessageType.REQUEST.getValue());
+
+        builder.setHeader(headerBuilder.build());
+
+        builder.setBody(ByteString.copyFrom(msg.getBytes()));
+
+        return builder.build();
+    }
+
+    public static MessageProto.Message createServiceResqMessage(String msg) {
+        MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
+
+        MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
+        headerBuilder.setType(MessageType.RESPONSE.getValue());
+
+        builder.setHeader(headerBuilder.build());
+
+        builder.setBody(ByteString.copyFrom(msg.getBytes()));
+
+        return builder.build();
     }
 
 }

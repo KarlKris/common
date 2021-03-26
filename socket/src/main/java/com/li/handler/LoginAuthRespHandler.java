@@ -33,8 +33,6 @@ public class LoginAuthRespHandler extends ChannelDuplexHandler {
 //        NettyMessage message = (NettyMessage) msg;
         MessageProto.Message message = (MessageProto.Message) msg;
 
-        log.info("收到消息：{}", msg.toString());
-
         // 仅处理登录请求
         MessageProto.Header header = message.getHeader();
         if (header != null && header.getType() == MessageType.LOGIN_REQ.getValue()) {

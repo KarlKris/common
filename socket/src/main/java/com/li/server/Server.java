@@ -1,21 +1,12 @@
 package com.li.server;
 
-import com.li.handler.FatherHandler;
 import com.li.handler.NettyServerMessageHandler;
 import com.li.ssl.SSLMODE;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
-import sun.misc.Signal;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -70,7 +61,7 @@ public class Server {
                 // 父类Handler的是加入到ChannelPipeline中
                 // 与 ServerBootrapAcceptor一起为新连接做处理
                 // 新连接完成后只有子Handler才会加到Channel中
-                .handler(new FatherHandler())
+//                .handler(new FatherHandler())
                 .childHandler(new NettyServerMessageHandler(SSLMODE.CSA.name()));
         // 绑定端口号
         for (int port : PORT) {
