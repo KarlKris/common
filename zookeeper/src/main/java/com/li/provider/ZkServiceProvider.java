@@ -133,49 +133,5 @@ public class ZkServiceProvider {
         return serviceName + "-" + ip + "-" + port;
     }
 
-    public static void main(String[] args) throws Exception {
-        ExponentialBackoffRetry retry = new ExponentialBackoffRetry(5000, 3);
-
-        CuratorFramework curatorFramework1 = CuratorFrameworkFactory
-                .builder()
-                .connectString("127.0.0.1:2181")
-                .retryPolicy(retry)
-                .namespace(CuratorFrameworkFactoryBean.NAME_SPACE)
-                .build();
-
-        curatorFramework1.start();
-
-        ZkServiceProvider provider1 = new ZkServiceProvider(curatorFramework1, "test-lvs");
-
-        provider1.registerService("127.0.0.1",14111, new InstanceDetail("127.0.0.1:14111"));
-
-        provider1.updateCount(5);
-
-        System.out.println("zookeeper service 1 start success!");
-
-        CuratorFramework curatorFramework2 = CuratorFrameworkFactory
-                .builder()
-                .connectString("127.0.0.1:2181")
-                .retryPolicy(retry)
-                .namespace(CuratorFrameworkFactoryBean.NAME_SPACE)
-                .build();
-
-        curatorFramework2.start();
-
-        ZkServiceProvider provider2 = new ZkServiceProvider(curatorFramework2, "test-lvs");
-
-        provider2.registerService("127.0.0.1",15111, new InstanceDetail("127.0.0.1:15111"));
-
-        provider2.updateCount(13);
-
-        System.out.println("zookeeper service 2 start success!");
-
-        Thread.sleep(60000);
-
-        provider1.shutdown();
-        provider2.shutdown();
-
-    }
-
 
 }

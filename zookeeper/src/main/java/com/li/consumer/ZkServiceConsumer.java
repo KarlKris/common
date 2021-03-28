@@ -1,17 +1,14 @@
 package com.li.consumer;
 
-import com.li.client.CuratorFrameworkFactoryBean;
 import com.li.client.InstanceDetail;
 import com.li.common.ByteUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.x.discovery.*;
+import org.apache.curator.x.discovery.ServiceDiscovery;
+import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
+import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
-import org.apache.curator.x.discovery.strategies.RandomStrategy;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.li.provider.ZkServiceProvider.COUNT;
@@ -33,11 +30,6 @@ public class ZkServiceConsumer {
      * 服务发现
      */
     private ConcurrentHashMap<String, ServiceDiscovery<InstanceDetail>> serviceDiscovery = new ConcurrentHashMap<>(4);
-
-    /**
-     * 服务缓存
-     */
-    private ConcurrentHashMap<String, ServiceCache<InstanceDetail>> serviceCache = new ConcurrentHashMap<>(4);
 
     ZkServiceConsumer(CuratorFramework curatorFramework) {
         this.curatorFramework = curatorFramework;
@@ -64,7 +56,7 @@ public class ZkServiceConsumer {
 
 
     /**
-     * 获取负载量最小的服务
+     * 获取负载量最小的服务(耗时严重 150ms 无法接受，后续优化)
      */
     public ServiceInstance<InstanceDetail> getMinServiceInstanceByDiscorvery(String serviceName) throws Exception {
         int min = Integer.MAX_VALUE;
@@ -109,58 +101,6 @@ public class ZkServiceConsumer {
         return checkAndGetServiceDiscorvery(serviceName).queryForInstance(selectedServiceName, selectedInstanceName);
     }
 
-    /**
-     * 获取负载量最小的服务
-     */
-    public ServiceInstance<InstanceDetail> getMinServiceInstanceByCache(String serviceName) throws Exception {
-        int min = Integer.MAX_VALUE;
-        String selectedInstanceName = null;
-        String selectedServiceName = null;
-        String prePath = SLASH + serviceName;
-        boolean change = false;
-        for (String name : this.curatorFramework.getChildren().forPath(prePath)) {
-            String temp = null;
-            for (String str : this.curatorFramework.getChildren().forPath(prePath + SLASH + name)) {
-                if (str.startsWith(COUNT)) {
-                    byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name + SLASH + str);
-                    int curCount = ByteUtils.toInt(bytes);
-                    if (min > curCount) {
-                        change = true;
-                        min = curCount;
-                    }
-                } else {
-                    if (change) {
-                        if (temp == null) {
-                            temp = str;
-                        }
-                        selectedInstanceName = temp;
-                        selectedServiceName = name;
-                        change = false;
-                    } else {
-                        temp = str;
-                    }
-                }
-
-                if (change && temp != null) {
-                    selectedInstanceName = temp;
-                    selectedServiceName = name;
-                    change = false;
-                }
-            }
-        }
-        if (selectedInstanceName == null) {
-            return null;
-        }
-
-        for (ServiceInstance<InstanceDetail> instance : checkAndGetServiceCache(serviceName).getInstances()) {
-            if (instance.getName().equals(selectedInstanceName)) {
-                return instance;
-            }
-        }
-
-        return null;
-    }
-
     public void shutdown() {
         this.serviceDiscovery.values().forEach(k -> {
             try {
@@ -170,13 +110,6 @@ public class ZkServiceConsumer {
             }
         });
 
-        this.serviceCache.values().forEach(k-> {
-            try {
-                k.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
     }
 
 
@@ -201,49 +134,5 @@ public class ZkServiceConsumer {
         return discovery;
     }
 
-    private ServiceCache<InstanceDetail> checkAndGetServiceCache(String serviceName) throws Exception {
-        ServiceCache<InstanceDetail> cache = null;
-        if ((cache = serviceCache.get(serviceName)) == null) {
-            cache = checkAndGetServiceDiscorvery(serviceName).serviceCacheBuilder()
-                    .name(serviceName)
-                    .build();
 
-            ServiceCache<InstanceDetail> old = this.serviceCache.putIfAbsent(serviceName, cache);
-            if (old != null) {
-                cache = old;
-            }else {
-                cache.start();
-            }
-        }
-        return cache;
-    }
-
-
-
-    public static void main(String[] args) throws Exception {
-        ExponentialBackoffRetry retry = new ExponentialBackoffRetry(5000, 3);
-
-        CuratorFramework curatorFramework = CuratorFrameworkFactory
-                .builder()
-                .connectString("127.0.0.1:2181")
-                .retryPolicy(retry)
-                .namespace(CuratorFrameworkFactoryBean.NAME_SPACE)
-                .build();
-
-        curatorFramework.start();
-
-        ZkServiceConsumer consumer = new ZkServiceConsumer(curatorFramework);
-
-        String serviceName = "test-lvs";
-        long s1 = System.currentTimeMillis();
-        System.out.println(consumer.getTotalCount(serviceName));
-        long s2 = System.currentTimeMillis();
-        System.out.println("耗时：" + (s2 - s1));
-        System.out.println(consumer.getMinServiceInstanceByCache(serviceName).getName());
-        long s3 = System.currentTimeMillis();
-        System.out.println("耗时：" + (s3 - s2));
-        System.out.println(consumer.getMinServiceInstanceByCache(serviceName).getName());
-        System.out.println("耗时: " + (System.currentTimeMillis() - s3));
-        consumer.shutdown();
-    }
 }
