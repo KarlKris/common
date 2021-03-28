@@ -12,10 +12,11 @@
         <module>cache</module>
         <module>socket</module>
         <module>utils</module>
+        <module>zookeeper</module>
     </modules>
 
     <properties>
-        <spring.version>5.3.4</spring.version>
+        <spring.version>5.2.0.RELEASE</spring.version>
     </properties>
 
     <dependencies>
@@ -34,12 +35,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
+            <artifactId>spring-context</artifactId>
             <version>${spring.version}</version>
         </dependency>
-
 
     </dependencies>
 
