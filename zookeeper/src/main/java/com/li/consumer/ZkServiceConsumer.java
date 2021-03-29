@@ -3,6 +3,7 @@ package com.li.consumer;
 import com.li.client.InstanceDetail;
 import com.li.common.ByteUtils;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
@@ -11,8 +12,7 @@ import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.li.provider.ZkServiceProvider.COUNT;
-import static com.li.provider.ZkServiceProvider.SLASH;
+import static com.li.provider.ZkServiceProvider.*;
 
 /**
  * @Auther: li-yuanwen
@@ -31,6 +31,11 @@ public class ZkServiceConsumer {
      */
     private ConcurrentHashMap<String, ServiceDiscovery<InstanceDetail>> serviceDiscovery = new ConcurrentHashMap<>(4);
 
+    /**
+     * 服务缓存
+     **/
+    private ConcurrentHashMap<String, ServiceCache<InstanceDetail>> serviceCache = new ConcurrentHashMap<>(4);
+
     ZkServiceConsumer(CuratorFramework curatorFramework) {
         this.curatorFramework = curatorFramework;
     }
@@ -39,66 +44,64 @@ public class ZkServiceConsumer {
      * 获取总共连接数
      */
     public int getTotalCount(String serviceName) throws Exception {
-        String prePath = SLASH + serviceName;
+        String prePath = mkServiceCountPrePath(serviceName);
         int count = 0;
         for (String name : this.curatorFramework.getChildren().forPath(prePath)) {
-            for (String str : this.curatorFramework.getChildren().forPath(prePath + SLASH + name)) {
-                if (str.startsWith(COUNT)) {
-                    byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name + SLASH + str);
-                    count += ByteUtils.toInt(bytes);
-                }
-            }
-
+            byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name);
+            count += ByteUtils.toInt(bytes);
         }
-
         return count;
     }
 
 
     /**
-     * 获取负载量最小的服务(耗时严重 150ms 无法接受，后续优化)
+     * 获取负载量最小的服务
      */
     public ServiceInstance<InstanceDetail> getMinServiceInstanceByDiscorvery(String serviceName) throws Exception {
         int min = Integer.MAX_VALUE;
         String selectedInstanceName = null;
-        String selectedServiceName = null;
-        String prePath = SLASH + serviceName;
-        boolean change = false;
+        String prePath = mkServiceCountPrePath(serviceName);
         for (String name : this.curatorFramework.getChildren().forPath(prePath)) {
-            String temp = null;
-            for (String str : this.curatorFramework.getChildren().forPath(prePath + SLASH + name)) {
-                if (str.startsWith(COUNT)) {
-                    byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name + SLASH + str);
-                    int curCount = ByteUtils.toInt(bytes);
-                    if (min > curCount) {
-                        change = true;
-                        min = curCount;
-                    }
-                } else {
-                    if (change) {
-                        if (temp == null) {
-                            temp = str;
-                        }
-                        selectedInstanceName = temp;
-                        selectedServiceName = name;
-                        change = false;
-                    } else {
-                        temp = str;
-                    }
-                }
-
-                if (change && temp != null) {
-                    selectedInstanceName = temp;
-                    selectedServiceName = name;
-                    change = false;
-                }
+            byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name);
+            int curCount = ByteUtils.toInt(bytes);
+            if (min > curCount) {
+                min = curCount;
+                selectedInstanceName = name;
             }
         }
         if (selectedInstanceName == null) {
             return null;
         }
 
-        return checkAndGetServiceDiscorvery(serviceName).queryForInstance(selectedServiceName, selectedInstanceName);
+        return checkAndGetServiceDiscorvery(serviceName).queryForInstance(serviceName, selectedInstanceName);
+    }
+
+    /**
+     * 获取负载量最小的服务
+     */
+    public ServiceInstance<InstanceDetail> getMinServiceInstanceByCache(String serviceName) throws Exception {
+        int min = Integer.MAX_VALUE;
+        String selectedInstanceName = null;
+        String prePath = mkServiceCountPrePath(serviceName);
+        for (String name : this.curatorFramework.getChildren().forPath(prePath)) {
+            byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name);
+            int curCount = ByteUtils.toInt(bytes);
+            if (min > curCount) {
+                min = curCount;
+                selectedInstanceName = name;
+            }
+        }
+        if (selectedInstanceName == null) {
+            return null;
+        }
+
+        for (ServiceInstance<InstanceDetail> instance : checkAndGetServiceCache(serviceName).getInstances()) {
+            if (instance.getId().equals(selectedInstanceName)) {
+                return instance;
+            }
+        }
+
+        return null;
     }
 
     public void shutdown() {
@@ -117,7 +120,7 @@ public class ZkServiceConsumer {
         ServiceDiscovery<InstanceDetail> discovery = null;
         if ((discovery = serviceDiscovery.get(serviceName)) == null) {
             discovery = ServiceDiscoveryBuilder.builder(InstanceDetail.class)
-                    .basePath(serviceName)
+                    .basePath(serviceName + SERVICE_DISCORVERY_SUFFIX)
                     .serializer(new JsonInstanceSerializer<>(InstanceDetail.class))
                     .client(this.curatorFramework)
                     .build();
@@ -134,5 +137,38 @@ public class ZkServiceConsumer {
         return discovery;
     }
 
+    private ServiceCache<InstanceDetail> checkAndGetServiceCache(String serviceName) throws Exception {
+        ServiceCache<InstanceDetail> cache = null;
+        if ((cache = serviceCache.get(serviceName)) == null) {
+            ServiceDiscovery<InstanceDetail> discovery = checkAndGetServiceDiscorvery(serviceName);
+            cache = discovery.serviceCacheBuilder()
+                    .name(serviceName)
+                    .build();
+
+            // 处理并发
+            ServiceCache<InstanceDetail> old = this.serviceCache.putIfAbsent(serviceName, cache);
+            if (old != null) {
+                cache = old;
+            } else {
+                cache.start();
+            }
+        }
+
+        return cache;
+    }
+
+    /**
+     * 构建服务发现根路径
+     **/
+    private String mkServiceDiscorveryPrePath(String serviceName) {
+        return SLASH + serviceName + SERVICE_DISCORVERY_SUFFIX + SLASH + serviceName;
+    }
+
+    /**
+     * 构建服务连接数根路径
+     **/
+    private String mkServiceCountPrePath(String serviceName) {
+        return mkServiceDiscorveryPrePath(serviceName) + COUNT;
+    }
 
 }

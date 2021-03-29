@@ -1,11 +1,8 @@
 package com.li.provider;
 
-import com.li.client.CuratorFrameworkFactoryBean;
 import com.li.client.InstanceDetail;
 import com.li.common.ByteUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
@@ -21,13 +18,20 @@ import java.io.IOException;
  **/
 public class ZkServiceProvider {
 
+    /**
+     * 分隔符
+     **/
     public static final String SLASH = "/";
+
+    /**
+     * 服务发现后缀
+     **/
+    public static final String SERVICE_DISCORVERY_SUFFIX = "_discorvery";
 
     /**
      * 连接数
      */
-    public static final String COUNT = "count_record";
-
+    public static final String COUNT = "_count";
 
     /**
      * zookeeper curator #ServiceDisCorvery
@@ -54,7 +58,7 @@ public class ZkServiceProvider {
         this.serviceName = serviceName;
 
         this.serviceDiscovery = ServiceDiscoveryBuilder.builder(InstanceDetail.class)
-                .basePath(serviceName)
+                .basePath(serviceName + SERVICE_DISCORVERY_SUFFIX)
                 .serializer(new JsonInstanceSerializer<>(InstanceDetail.class))
                 .client(this.curatorFramework)
                 .build();
@@ -73,17 +77,18 @@ public class ZkServiceProvider {
     public void registerService(String ip, int port, InstanceDetail instance) throws Exception {
         checkServiceRegisterOrNot();
 
-        String name = makeCountPathName(serviceName, ip, port);
+        String id = makeCountPathName(ip, port);
         ServiceInstance<InstanceDetail> serviceInstance = ServiceInstance.<InstanceDetail>builder()
+                .id(id)
                 .address(ip)
                 .port(port)
-                .name(name)
+                .name(serviceName)
                 .payload(instance).build();
 
         this.serviceDiscovery.registerService(serviceInstance);
 
         // 创建连接数节点
-        this.countPath = createCountNode(name);
+        this.countPath = createCountNode(id);
     }
 
     /**
@@ -116,7 +121,7 @@ public class ZkServiceProvider {
         return this.curatorFramework.create()
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.EPHEMERAL)
-                .forPath(SLASH + serviceName + SLASH + path + SLASH + COUNT, ByteUtils.toByteArray(0));
+                .forPath(SLASH + serviceName + SERVICE_DISCORVERY_SUFFIX + SLASH + serviceName + COUNT + SLASH + path, ByteUtils.toByteArray(0));
     }
 
     private void checkServiceRegisterOrNot() {
@@ -129,8 +134,8 @@ public class ZkServiceProvider {
         return this.countPath != null;
     }
 
-    private String makeCountPathName(String serviceName, String ip, int port) {
-        return serviceName + "-" + ip + "-" + port;
+    private String makeCountPathName(String ip, int port) {
+        return serviceName + "_" + ip + "_" + port;
     }
 
 
