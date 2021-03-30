@@ -72,7 +72,7 @@ public class ZkServiceProviderTest {
     }
 
     @Test
-    public void testZkServiceProvider_3() {
+    public void testZkServiceProvider_3() throws Exception {
         ExponentialBackoffRetry retry = new ExponentialBackoffRetry(5000, 3);
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(4);
         CuratorFramework curatorFramework = CuratorFrameworkFactory
@@ -86,28 +86,32 @@ public class ZkServiceProviderTest {
         for (int i = 0; i < 300; i++) {
 
             try {
+                int j = i;
                 ZkServiceProvider provider = new ZkServiceProvider(curatorFramework, "test-lvs");
                 provider.registerService("127.0.0.1", i, new InstanceDetail("127.0.0.1:" + i));
 
-                provider.updateCount(new Random().nextInt(100));
+                provider.updateCount(new Random().nextInt(100) + 1);
 
-                System.out.println("zookeeper service " + i + " start success!");
+                System.out.println("zookeeper service " + j + " start success!");
 
+                int delaySecond = new Random().nextInt(15) + 60;
                 executorService.schedule(() -> {
                     try {
-                        provider.shutdown();
-                    } catch (IOException e) {
+                        provider.updateCount(new Random().nextInt(100) + 1);
+                        System.out.println("zookeeper service " + j + " change count!");
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
-                }, 600, TimeUnit.SECONDS);
+                }, delaySecond, TimeUnit.SECONDS);
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
-        executorService.schedule(curatorFramework::close, 600, TimeUnit.SECONDS);
         System.out.println("300台服务启动成功");
+        Thread.sleep(180000);
         executorService.shutdown();
+        curatorFramework.close();
     }
 
 }

@@ -77,7 +77,7 @@ public class ZkServiceProvider {
     public void registerService(String ip, int port, InstanceDetail instance) throws Exception {
         checkServiceRegisterOrNot();
 
-        String id = makeCountPathName(ip, port);
+        String id = makeNodeName(serviceName, ip, port);
         ServiceInstance<InstanceDetail> serviceInstance = ServiceInstance.<InstanceDetail>builder()
                 .id(id)
                 .address(ip)
@@ -89,6 +89,18 @@ public class ZkServiceProvider {
 
         // 创建连接数节点
         this.countPath = createCountNode(id);
+    }
+
+    /** 服务移除 **/
+    public void unregisterService(String ip, int port) throws Exception {
+        checkServiceRegisterOrNot();
+
+        String id = makeNodeName(serviceName, ip, port);
+        ServiceInstance<InstanceDetail> instance = ServiceInstance.<InstanceDetail>builder()
+                .id(id).build();
+
+        this.serviceDiscovery.unregisterService(instance);
+
     }
 
     /**
@@ -134,7 +146,8 @@ public class ZkServiceProvider {
         return this.countPath != null;
     }
 
-    private String makeCountPathName(String ip, int port) {
+    /** 服务节点id **/
+    public static String makeNodeName(String serviceName, String ip, int port) {
         return serviceName + "_" + ip + "_" + port;
     }
 

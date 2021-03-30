@@ -1,6 +1,7 @@
 package com.li.consumer;
 
 import com.li.client.InstanceDetail;
+import com.li.client.ServiceNode;
 import com.li.common.ByteUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.x.discovery.ServiceCache;
@@ -8,6 +9,7 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
+import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +38,12 @@ public class ZkServiceConsumer {
      **/
     private ConcurrentHashMap<String, ServiceCache<InstanceDetail>> serviceCache = new ConcurrentHashMap<>(4);
 
+    /**
+     * 服务节点信息
+     **/
+    private ConcurrentHashMap<String, ServiceNode> serviceVersion = new ConcurrentHashMap<>(4);
+
+
     ZkServiceConsumer(CuratorFramework curatorFramework) {
         this.curatorFramework = curatorFramework;
     }
@@ -58,17 +66,7 @@ public class ZkServiceConsumer {
      * 获取负载量最小的服务
      */
     public ServiceInstance<InstanceDetail> getMinServiceInstanceByDiscorvery(String serviceName) throws Exception {
-        int min = Integer.MAX_VALUE;
-        String selectedInstanceName = null;
-        String prePath = mkServiceCountPrePath(serviceName);
-        for (String name : this.curatorFramework.getChildren().forPath(prePath)) {
-            byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name);
-            int curCount = ByteUtils.toInt(bytes);
-            if (min > curCount) {
-                min = curCount;
-                selectedInstanceName = name;
-            }
-        }
+        String selectedInstanceName = getMinServiceCountInstanceName(serviceName);
         if (selectedInstanceName == null) {
             return null;
         }
@@ -80,17 +78,7 @@ public class ZkServiceConsumer {
      * 获取负载量最小的服务
      */
     public ServiceInstance<InstanceDetail> getMinServiceInstanceByCache(String serviceName) throws Exception {
-        int min = Integer.MAX_VALUE;
-        String selectedInstanceName = null;
-        String prePath = mkServiceCountPrePath(serviceName);
-        for (String name : this.curatorFramework.getChildren().forPath(prePath)) {
-            byte[] bytes = this.curatorFramework.getData().forPath(prePath + SLASH + name);
-            int curCount = ByteUtils.toInt(bytes);
-            if (min > curCount) {
-                min = curCount;
-                selectedInstanceName = name;
-            }
-        }
+        String selectedInstanceName = getMinServiceCountInstanceName(serviceName);
         if (selectedInstanceName == null) {
             return null;
         }
@@ -171,4 +159,48 @@ public class ZkServiceConsumer {
         return mkServiceDiscorveryPrePath(serviceName) + COUNT;
     }
 
+
+    private String getMinServiceCountInstanceName(String serviceName) throws Exception {
+        // 对比版本
+        Stat stat = new Stat();
+        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceCountPrePath(serviceName));
+
+        ServiceNode node = serviceVersion.get(serviceName);
+        int cversion = getServiceNodeCversion(serviceName);
+        // 版本不一致
+        if (node == null || node.getCversion() != cversion) {
+            System.out.println("版本不一致");
+            String selectedInstanceName = doSearchMinCountServiceInstanceName(serviceName);
+            serviceVersion.put(serviceName, new ServiceNode(cversion, selectedInstanceName));
+            return selectedInstanceName;
+        }
+        return node.getInstanceName();
+
+    }
+
+    private int getServiceNodeCversion(String serviceName) throws Exception {
+        Stat stat = new Stat();
+        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceDiscorveryPrePath(serviceName));
+
+        return stat.getCversion();
+    }
+
+    private String doSearchMinCountServiceInstanceName(String serviceName) throws Exception {
+        int min = Integer.MAX_VALUE;
+        String selectedInstanceName = null;
+        String path = mkServiceDiscorveryPrePath(serviceName);
+        for (String name : this.curatorFramework.getChildren().forPath(path)) {
+            byte[] bytes = this.curatorFramework.getData().forPath(path + SLASH + name);
+            int curCount = ByteUtils.toInt(bytes);
+            if (min > curCount) {
+                min = curCount;
+                selectedInstanceName = name;
+            }
+        }
+        if (selectedInstanceName == null) {
+            return null;
+        }
+
+        return selectedInstanceName;
+    }
 }
