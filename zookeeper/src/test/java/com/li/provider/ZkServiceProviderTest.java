@@ -1,13 +1,13 @@
 package com.li.provider;
 
 import com.li.client.CuratorFrameworkFactoryBean;
-import com.li.client.InstanceDetail;
+import com.li.node.InstanceDetail;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -35,13 +35,13 @@ public class ZkServiceProviderTest {
 
         ZkServiceProvider provider1 = new ZkServiceProvider(curatorFramework1, "test-lvs");
 
-        provider1.registerService("127.0.0.1", 14111, new InstanceDetail("127.0.0.1:14111"));
+        provider1.registerService("127.0.0.1", 14111, new InstanceDetail("12_1", "127.0.0.1:14111"));
 
         provider1.updateCount(5);
 
         System.out.println("zookeeper service 1 start success!");
 
-        Thread.sleep(60000);
+        Thread.sleep(30000);
 
         provider1.shutdown();
     }
@@ -60,9 +60,23 @@ public class ZkServiceProviderTest {
 
         ZkServiceProvider provider2 = new ZkServiceProvider(curatorFramework2, "test-lvs");
 
-        provider2.registerService("127.0.0.1", 15111, new InstanceDetail("127.0.0.1:15111"));
+        Stat stat = new Stat();
+        curatorFramework2.getData().storingStatIn(stat).forPath("/test-lvs_discorvery/test-lvs_count");
+
+        System.out.println(stat.getVersion());
+
+        provider2.registerService("127.0.0.1", 15111, new InstanceDetail("12_2", "127.0.0.1:15111"));
+
+        stat = new Stat();
+        curatorFramework2.getData().storingStatIn(stat).forPath("/test-lvs_discorvery/test-lvs_count");
+
+        System.out.println(stat.getVersion());
 
         provider2.updateCount(13);
+        stat = new Stat();
+        curatorFramework2.getData().storingStatIn(stat).forPath("/test-lvs_discorvery/test-lvs_count");
+
+        System.out.println(stat.getVersion());
 
         System.out.println("zookeeper service 2 start success!");
 
@@ -88,7 +102,7 @@ public class ZkServiceProviderTest {
             try {
                 int j = i;
                 ZkServiceProvider provider = new ZkServiceProvider(curatorFramework, "test-lvs");
-                provider.registerService("127.0.0.1", i, new InstanceDetail("127.0.0.1:" + i));
+                provider.registerService("127.0.0.1", i, new InstanceDetail("12_" + i, "127.0.0.1:" + i));
 
                 provider.updateCount(new Random().nextInt(100) + 1);
 
@@ -109,7 +123,7 @@ public class ZkServiceProviderTest {
             }
         }
         System.out.println("300台服务启动成功");
-        Thread.sleep(180000);
+        Thread.sleep(100000);
         executorService.shutdown();
         curatorFramework.close();
     }

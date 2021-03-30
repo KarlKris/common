@@ -1,10 +1,9 @@
 package com.li.consumer;
 
-import com.li.client.InstanceDetail;
-import com.li.client.ServiceNode;
+import com.li.node.InstanceDetail;
+import com.li.node.ServiceNode;
 import com.li.common.ByteUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
@@ -34,11 +33,6 @@ public class ZkServiceConsumer {
     private ConcurrentHashMap<String, ServiceDiscovery<InstanceDetail>> serviceDiscovery = new ConcurrentHashMap<>(4);
 
     /**
-     * 服务缓存
-     **/
-    private ConcurrentHashMap<String, ServiceCache<InstanceDetail>> serviceCache = new ConcurrentHashMap<>(4);
-
-    /**
      * 服务节点信息
      **/
     private ConcurrentHashMap<String, ServiceNode> serviceVersion = new ConcurrentHashMap<>(4);
@@ -65,31 +59,13 @@ public class ZkServiceConsumer {
     /**
      * 获取负载量最小的服务
      */
-    public ServiceInstance<InstanceDetail> getMinServiceInstanceByDiscorvery(String serviceName) throws Exception {
+    public ServiceInstance<InstanceDetail> getMinServiceInstance(String serviceName) throws Exception {
         String selectedInstanceName = getMinServiceCountInstanceName(serviceName);
         if (selectedInstanceName == null) {
             return null;
         }
 
         return checkAndGetServiceDiscorvery(serviceName).queryForInstance(serviceName, selectedInstanceName);
-    }
-
-    /**
-     * 获取负载量最小的服务
-     */
-    public ServiceInstance<InstanceDetail> getMinServiceInstanceByCache(String serviceName) throws Exception {
-        String selectedInstanceName = getMinServiceCountInstanceName(serviceName);
-        if (selectedInstanceName == null) {
-            return null;
-        }
-
-        for (ServiceInstance<InstanceDetail> instance : checkAndGetServiceCache(serviceName).getInstances()) {
-            if (instance.getId().equals(selectedInstanceName)) {
-                return instance;
-            }
-        }
-
-        return null;
     }
 
     public void shutdown() {
@@ -125,25 +101,6 @@ public class ZkServiceConsumer {
         return discovery;
     }
 
-    private ServiceCache<InstanceDetail> checkAndGetServiceCache(String serviceName) throws Exception {
-        ServiceCache<InstanceDetail> cache = null;
-        if ((cache = serviceCache.get(serviceName)) == null) {
-            ServiceDiscovery<InstanceDetail> discovery = checkAndGetServiceDiscorvery(serviceName);
-            cache = discovery.serviceCacheBuilder()
-                    .name(serviceName)
-                    .build();
-
-            // 处理并发
-            ServiceCache<InstanceDetail> old = this.serviceCache.putIfAbsent(serviceName, cache);
-            if (old != null) {
-                cache = old;
-            } else {
-                cache.start();
-            }
-        }
-
-        return cache;
-    }
 
     /**
      * 构建服务发现根路径
@@ -162,33 +119,29 @@ public class ZkServiceConsumer {
 
     private String getMinServiceCountInstanceName(String serviceName) throws Exception {
         // 对比版本
-        Stat stat = new Stat();
-        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceCountPrePath(serviceName));
-
         ServiceNode node = serviceVersion.get(serviceName);
-        int cversion = getServiceNodeCversion(serviceName);
+        int version = getServiceNodeVersion(serviceName);
         // 版本不一致
-        if (node == null || node.getCversion() != cversion) {
-            System.out.println("版本不一致");
+        if (node == null || node.getVersion() != version) {
             String selectedInstanceName = doSearchMinCountServiceInstanceName(serviceName);
-            serviceVersion.put(serviceName, new ServiceNode(cversion, selectedInstanceName));
+            serviceVersion.put(serviceName, new ServiceNode(serviceName, version, selectedInstanceName));
             return selectedInstanceName;
         }
         return node.getInstanceName();
 
     }
 
-    private int getServiceNodeCversion(String serviceName) throws Exception {
+    private int getServiceNodeVersion(String serviceName) throws Exception {
         Stat stat = new Stat();
-        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceDiscorveryPrePath(serviceName));
+        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceCountPrePath(serviceName));
 
-        return stat.getCversion();
+        return stat.getVersion();
     }
 
     private String doSearchMinCountServiceInstanceName(String serviceName) throws Exception {
         int min = Integer.MAX_VALUE;
         String selectedInstanceName = null;
-        String path = mkServiceDiscorveryPrePath(serviceName);
+        String path = mkServiceCountPrePath(serviceName);
         for (String name : this.curatorFramework.getChildren().forPath(path)) {
             byte[] bytes = this.curatorFramework.getData().forPath(path + SLASH + name);
             int curCount = ByteUtils.toInt(bytes);

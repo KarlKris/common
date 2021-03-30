@@ -1,6 +1,6 @@
 package com.li.provider;
 
-import com.li.client.InstanceDetail;
+import com.li.node.InstanceDetail;
 import com.li.common.ByteUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.x.discovery.ServiceDiscovery;
@@ -53,6 +53,11 @@ public class ZkServiceProvider {
      */
     private String countPath;
 
+
+    /**
+     * @param curatorFramework zookeeper 客户端
+     * @param serviceName      服务名
+     */
     ZkServiceProvider(CuratorFramework curatorFramework, String serviceName) throws Exception {
         this.curatorFramework = curatorFramework;
         this.serviceName = serviceName;
@@ -91,7 +96,9 @@ public class ZkServiceProvider {
         this.countPath = createCountNode(id);
     }
 
-    /** 服务移除 **/
+    /**
+     * 服务移除
+     **/
     public void unregisterService(String ip, int port) throws Exception {
         checkServiceRegisterOrNot();
 
@@ -100,7 +107,6 @@ public class ZkServiceProvider {
                 .id(id).build();
 
         this.serviceDiscovery.unregisterService(instance);
-
     }
 
     /**
@@ -113,7 +119,9 @@ public class ZkServiceProvider {
 
         this.curatorFramework.setData().forPath(countPath, ByteUtils.toByteArray(count));
 
+        updateCountParentNode();
     }
+
 
     /**
      * 关闭
@@ -146,7 +154,17 @@ public class ZkServiceProvider {
         return this.countPath != null;
     }
 
-    /** 服务节点id **/
+    /**
+     * 更新连接计数节点数据，目的在于判断版本号
+     */
+    private void updateCountParentNode() throws Exception {
+        String path = countPath.substring(0, countPath.lastIndexOf(SLASH));
+        this.curatorFramework.setData().forPath(path, ByteUtils.toByteArray(0));
+    }
+
+    /**
+     * 服务节点id
+     **/
     public static String makeNodeName(String serviceName, String ip, int port) {
         return serviceName + "_" + ip + "_" + port;
     }

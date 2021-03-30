@@ -1,14 +1,19 @@
-package com.li.client;
+package com.li.node;
 
-import lombok.Data;
+import lombok.Getter;
 
 /**
  * @Auther: li-yuanwen
  * @Date: 2021/3/27 16:57
  * @Description: 服务信息
  **/
-@Data
+@Getter
 public class InstanceDetail {
+
+    /**
+     * 服务器标识
+     */
+    private String server;
 
     /**
      * 服务地址
@@ -18,7 +23,8 @@ public class InstanceDetail {
     public InstanceDetail() {
     }
 
-    public InstanceDetail(String address) {
+    public InstanceDetail(String server, String address) {
+        this.server = server;
         this.address = address;
     }
 }
