@@ -1,11 +1,10 @@
 package com.li.consumer;
 
-import com.li.node.InstanceDetail;
-import com.li.node.ServiceNode;
 import com.li.common.ByteUtils;
+import com.li.node.InstanceDetail;
+import com.li.node.ServiceDiscoveryNode;
+import com.li.node.ServiceNode;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.x.discovery.ServiceDiscovery;
-import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.zookeeper.data.Stat;
@@ -22,6 +21,8 @@ import static com.li.provider.ZkServiceProvider.*;
  **/
 public class ZkServiceConsumer {
 
+    public static final JsonInstanceSerializer<InstanceDetail> SERIALIZER = new JsonInstanceSerializer<>(InstanceDetail.class);
+
     /**
      * zookeeper 客户端
      */
@@ -30,7 +31,7 @@ public class ZkServiceConsumer {
     /**
      * 服务发现
      */
-    private ConcurrentHashMap<String, ServiceDiscovery<InstanceDetail>> serviceDiscovery = new ConcurrentHashMap<>(4);
+    private ConcurrentHashMap<String, ServiceDiscoveryNode> serviceDiscovery = new ConcurrentHashMap<>(4);
 
     /**
      * 服务节点信息
@@ -65,13 +66,13 @@ public class ZkServiceConsumer {
             return null;
         }
 
-        return checkAndGetServiceDiscorvery(serviceName).queryForInstance(serviceName, selectedInstanceName);
+        return checkAndGetServiceDiscorvery(serviceName).getServiceInstance(selectedInstanceName);
     }
 
     public void shutdown() {
         this.serviceDiscovery.values().forEach(k -> {
             try {
-                k.close();
+                k.shutdown();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -80,25 +81,21 @@ public class ZkServiceConsumer {
     }
 
 
-    private ServiceDiscovery<InstanceDetail> checkAndGetServiceDiscorvery(String serviceName) throws Exception {
-        ServiceDiscovery<InstanceDetail> discovery = null;
-        if ((discovery = serviceDiscovery.get(serviceName)) == null) {
-            discovery = ServiceDiscoveryBuilder.builder(InstanceDetail.class)
-                    .basePath(serviceName + SERVICE_DISCORVERY_SUFFIX)
-                    .serializer(new JsonInstanceSerializer<>(InstanceDetail.class))
-                    .client(this.curatorFramework)
-                    .build();
+    private ServiceDiscoveryNode checkAndGetServiceDiscorvery(String serviceName) throws Exception {
+        ServiceDiscoveryNode discoveryNode = null;
+        if ((discoveryNode = serviceDiscovery.get(serviceName)) == null) {
+            discoveryNode = new ServiceDiscoveryNode(serviceName);
 
             // 处理并发
-            ServiceDiscovery<InstanceDetail> old = this.serviceDiscovery.putIfAbsent(serviceName, discovery);
+            ServiceDiscoveryNode old = this.serviceDiscovery.putIfAbsent(serviceName, discoveryNode);
             if (old != null) {
-                discovery = old;
+                discoveryNode = old;
             } else {
-                discovery.start();
+                discoveryNode.start(this.curatorFramework);
             }
         }
 
-        return discovery;
+        return discoveryNode;
     }
 
 

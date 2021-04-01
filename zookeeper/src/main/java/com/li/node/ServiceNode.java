@@ -29,10 +29,6 @@ public class ServiceNode {
      **/
     private String instanceName;
 
-    /**
-     * 服务缓存
-     */
-    private ServiceCache<InstanceDetail> cache;
 
     public ServiceNode(String serviceName, int version, String instanceName) {
         this.version = version;
@@ -40,21 +36,6 @@ public class ServiceNode {
         this.serviceName = serviceName;
     }
 
-    public void start(ServiceDiscovery<InstanceDetail> discovery) throws Exception {
-        if (this.cache != null) {
-            return;
-        }
 
-        this.cache = discovery.serviceCacheBuilder().name(serviceName).build();
-        this.cache.start();
-    }
-
-    public void shutdown() throws IOException {
-        if (this.cache == null) {
-            return;
-        }
-
-        this.cache.close();
-    }
 
 }
