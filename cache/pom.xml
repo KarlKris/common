@@ -14,6 +14,8 @@
     <properties>
         <lettuce-version>6.0.2.RELEASE</lettuce-version>
         <redisson-version>3.13.6</redisson-version>
+        <log4j2.version>2.8.2</log4j2.version>
+        <slf4j.version>1.6.3</slf4j.version>
     </properties>
 
     <dependencies>
