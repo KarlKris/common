@@ -35,7 +35,19 @@ public enum MessageType {
     /**
      * 业务响应消息
      **/
-    RESPONSE((byte) 6);
+    RESPONSE((byte) 6),
+
+    /**
+     * 请求转发
+     */
+    FORWARD_REQ((byte) 7),
+
+    /**
+     * 响应转发
+     */
+    FORWARD_RESP((byte) 8),
+
+    ;
 
     private byte value;
 

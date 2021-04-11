@@ -7,6 +7,8 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Value;
 
 
 /**
@@ -15,12 +17,10 @@ import lombok.extern.slf4j.Slf4j;
  * @Date 2020/4/11 3:58
  */
 @Slf4j
-public class Server {
+public class Server implements DisposableBean {
 
     // 端口号
-    public static final int[] PORT = new int[]{
-            11028
-    };
+    private int port;
 
     // NIO 线程组
     private EventLoopGroup boss;
@@ -29,13 +29,17 @@ public class Server {
     // Channel
     private Channel channel;
 
+    public Server(int port) {
+        this.port = port;
+    }
+
 
     /**
      * 启动初始化
      */
     private void init() {
         // 配置服务端线程组
-        boss = new NioEventLoopGroup(PORT.length);
+        boss = new NioEventLoopGroup(1);
         workers = new NioEventLoopGroup();
     }
 
@@ -64,19 +68,17 @@ public class Server {
 //                .handler(new FatherHandler())
                 .childHandler(new NettyServerMessageHandler(SSLMODE.CSA.name()));
         // 绑定端口号
-        for (int port : PORT) {
-            ChannelFuture future = bootstrap.bind(port).sync();
+        ChannelFuture future = bootstrap.bind(port).sync();
 
-            // 绑定服务器Channel
-            channel = future.channel();
+        // 绑定服务器Channel
+        channel = future.channel();
 
-            log.info("-------服务器启动成功[{}]---------", port);
+        log.info("-------服务器启动成功[{}]---------", port);
 
-            channel.closeFuture().addListener((ChannelFutureListener) future1 -> {
-                log.warn("端口-[{}]链路-[{}]关闭", port, channel.toString());
-                stop();
-            });
-        }
+        channel.closeFuture().addListener((ChannelFutureListener) future1 -> {
+            log.warn("端口-[{}]链路-[{}]关闭", port, channel.toString());
+            stop();
+        });
     }
 
 
@@ -90,15 +92,8 @@ public class Server {
         workers.shutdownGracefully();
     }
 
-
-    public static void main(String[] args) throws InterruptedException {
-        new Server().start();
-//        ExecutorService executorService = new ThreadPoolExecutor(4, 4, 0L
-//                , TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new DefaultThreadFactory("测试线程池"));
-//        for (int i = 0; i < 10000; i++) {
-//            int j = i;
-//            executorService.submit(()-> System.out.println(j));
-//        }
+    @Override
+    public void destroy() throws Exception {
+        stop();
     }
-
 }
