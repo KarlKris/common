@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.parser.Feature;
+import com.li.session.Session;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,9 +53,11 @@ public class MethodProcessor {
     }
 
     /** 方法调用 **/
-    public Object invoke(byte[] body, long identityId) throws InvocationTargetException, IllegalAccessException {
+    public Object invoke(Session session, byte[] body, long identityId) throws InvocationTargetException, IllegalAccessException {
         int length = params.length;
         Object[] args = new Object[length];
+
+        String typeName = session.getClass().getTypeName();
 
         JSONObject object = JSON.parseObject(Arrays.toString(body));
         for (int i = 0; i < length; i++ ){
@@ -64,6 +67,12 @@ public class MethodProcessor {
             }else {
                 String name = parameterInfo.getName();
                 Type type = parameterInfo.getType();
+
+                // session 注入
+                if (typeName.equals(type.getTypeName())) {
+                    args[i] = session;
+                    continue;
+                }
 
                 JSONObject obj = object.getJSONObject(name);
 

@@ -54,6 +54,10 @@ public class SessionManager {
     }
 
 
+    /** 服务器标识 **/
+    public String getServerId() {
+        return snowFlakeId.getWorkerId() + "_" + snowFlakeId.getDatacenterId();
+    }
 
 
 }

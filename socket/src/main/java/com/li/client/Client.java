@@ -25,8 +25,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class Client {
 
-    public static final int PORT = 11028;
-    public static final String HOST = "192.168.11.83";
+    /** ip地址 **/
+    private String host;
+    /** 端口地址 **/
+    private int port;
 
     private EventLoopGroup group;
     private Channel channel;
@@ -36,6 +38,11 @@ public class Client {
     public int connectNum = 0;
     private ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L
             , TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new DefaultThreadFactory("客户端断线重连单线程执行器"));
+
+    Client(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
 
 
     public void connect() throws InterruptedException {
@@ -49,9 +56,9 @@ public class Client {
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1500)
                     .handler(new NettyClientMessageHandler(SSLMODE.CSA.name()));
 
-            ChannelFuture future = b.connect(HOST, PORT).sync();
+            ChannelFuture future = b.connect(host, port).sync();
             channel = future.channel();
-            log.info("----------客户端连接-[{}]", HOST + ":" + PORT);
+            log.info("----------客户端连接[{}]成功---------", host + ":" + port);
 
             channel.closeFuture().sync();
         } finally {
@@ -61,10 +68,11 @@ public class Client {
         }
     }
 
-    public void wirte(String msg) {
-        if (channel != null) {
-            channel.writeAndFlush(MessageProtoFactory.createServiceReqMessage(msg));
+    public void wirte(int module, int command, String msg) throws InterruptedException {
+        if (channel == null) {
+            connect();
         }
+        channel.writeAndFlush(MessageProtoFactory.createServiceReqMessage(module, command, msg));
     }
 
     private void doExecuteReconnect() {
@@ -80,10 +88,5 @@ public class Client {
         }
     }
 
-
-
-    public static void main(String[] args) throws InterruptedException {
-        new Client().connect();
-    }
 
 }

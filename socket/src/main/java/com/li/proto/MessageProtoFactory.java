@@ -70,15 +70,17 @@ public class MessageProtoFactory {
         return builder.build();
     }
 
-    public static MessageProto.Message createServiceReqMessage(String msg) {
+    public static MessageProto.Message createServiceReqMessage(int module, int command, String body) {
         MessageProto.Message.Builder builder = MessageProto.Message.newBuilder();
 
         MessageProto.Header.Builder headerBuilder = MessageProto.Header.newBuilder();
         headerBuilder.setType(MessageType.REQUEST.getValue());
+        headerBuilder.setModule(module);
+        headerBuilder.setCommand(command);
 
         builder.setHeader(headerBuilder.build());
 
-        builder.setBody(ByteString.copyFrom(msg.getBytes()));
+        builder.setBody(ByteString.copyFrom(body.getBytes()));
 
         return builder.build();
     }

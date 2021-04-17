@@ -19,10 +19,7 @@ public class ClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.executor().scheduleAtFixedRate(() -> {
-            log.info("------定时任务-------------");
-            ctx.writeAndFlush(MessageProtoFactory.createServiceReqMessage("service msg : " + new Random().nextInt(100)));
-        }, 0, 2, TimeUnit.SECONDS);
+
     }
 
     @Override

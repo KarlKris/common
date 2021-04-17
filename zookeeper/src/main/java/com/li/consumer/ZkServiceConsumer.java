@@ -116,8 +116,11 @@ public class ZkServiceConsumer {
 
     private String getMinServiceCountInstanceName(String serviceName) throws Exception {
         // 对比版本
+        Stat stat = new Stat();
+        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceCountPrePath(serviceName));
+
         ServiceNode node = serviceVersion.get(serviceName);
-        int version = getServiceNodeVersion(serviceName);
+        int version = stat.getVersion();
         // 版本不一致
         if (node == null || node.getVersion() != version) {
             String selectedInstanceName = doSearchMinCountServiceInstanceName(serviceName);
@@ -128,12 +131,6 @@ public class ZkServiceConsumer {
 
     }
 
-    private int getServiceNodeVersion(String serviceName) throws Exception {
-        Stat stat = new Stat();
-        curatorFramework.getData().storingStatIn(stat).forPath(mkServiceCountPrePath(serviceName));
-
-        return stat.getVersion();
-    }
 
     private String doSearchMinCountServiceInstanceName(String serviceName) throws Exception {
         int min = Integer.MAX_VALUE;

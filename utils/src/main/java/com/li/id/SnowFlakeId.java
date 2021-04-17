@@ -1,7 +1,7 @@
 package com.li.id;
 
 /**
- * @Description 描述
+ * @Description 雪花
  * @Author li-yuanwen
  * @Date 2021/3/25 17:11
  */
@@ -70,6 +70,16 @@ public class SnowFlakeId {
     }
 
     // ==============================Methods==========================================
+
+
+    public long getWorkerId() {
+        return workerId;
+    }
+
+    public long getDatacenterId() {
+        return datacenterId;
+    }
+
     /**
      * 获得下一个ID (该方法是线程安全的)
      * @return SnowflakeId

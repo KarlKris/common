@@ -20,6 +20,10 @@
         <fastjson.version>1.2.29</fastjson.version>
         <log4j2.version>2.8.2</log4j2.version>
         <slf4j.version>1.6.3</slf4j.version>
+
+        <netty.version>4.1.42.Final</netty.version>
+        <protobuf.version>3.11.1</protobuf.version>
+        <junit.version>4.12</junit.version>
     </properties>
 
     <dependencies>

@@ -31,19 +31,6 @@ public class CuratorFrameworkFactoryBean implements FactoryBean<CuratorFramework
     @Value("${zookeeper.url:}")
     private String zookeeperUrl;
 
-
-    /**
-     * zookeeper 服务发现节点名称
-     */
-    @Value("${zookeeper.service.name:}")
-    private String serviceName;
-
-    /**
-     * 进程服务端口
-     */
-    @Value("${server.port:}")
-    private int port;
-
     @Override
     public CuratorFramework getObject()  {
         return client;
