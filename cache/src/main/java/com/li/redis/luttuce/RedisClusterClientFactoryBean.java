@@ -11,9 +11,9 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 
 /**
- * @Description RedisClusterClient FactoryBean
- * @Author li-yuanwen
- * @Date 2021/4/8 11:05
+ * RedisClusterClient FactoryBean
+ * @author li-yuanwen
+ * @date 2021/4/8 11:05
  */
 public class RedisClusterClientFactoryBean implements FactoryBean<RedisClusterClient>, InitializingBean {
 

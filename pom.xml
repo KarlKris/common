@@ -13,6 +13,7 @@
         <module>socket</module>
         <module>utils</module>
         <module>zookeeper</module>
+        <module>event</module>
     </modules>
 
     <properties>

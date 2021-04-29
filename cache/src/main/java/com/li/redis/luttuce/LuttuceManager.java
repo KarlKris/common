@@ -1,7 +1,7 @@
 package com.li.redis.luttuce;
 
 import com.alibaba.fastjson.JSON;
-import com.li.redis.CacheManager;
+import com.li.redis.DistributedCacheManager;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.reactive.RedisAdvancedClusterReactiveCommands;
@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @Description Redis Luttuce客户端 缓存管理接口
- * @Author li-yuanwen
- * @Date 2021/4/8 10:55
+ * Redis Luttuce客户端 缓存管理接口
+ * @author li-yuanwen
+ * @date 2021/4/8 10:55
  */
-public class LuttuceManager implements CacheManager {
+public class LuttuceManager implements DistributedCacheManager {
 
     /**
      * luttuce配置对象
@@ -129,17 +129,17 @@ public class LuttuceManager implements CacheManager {
     }
 
     @Override
-    public void hset(String key, Object field, Object value) {
+    public void hSet(String key, Object field, Object value) {
         getSyncCommand().hset(key, JSON.toJSONString(field), JSON.toJSONString(value));
     }
 
     @Override
-    public Object hget(String key, Object field) {
+    public Object hGet(String key, Object field) {
         return getSyncCommand().hget(key, JSON.toJSONString(field));
     }
 
     @Override
-    public void hdel(String key, Object field) {
+    public void hDel(String key, Object field) {
         getSyncCommand().hdel(key, JSON.toJSONString(field));
     }
 
@@ -154,27 +154,27 @@ public class LuttuceManager implements CacheManager {
     }
 
     @Override
-    public void setrange(String key, long offset, String value) {
+    public void setRange(String key, long offset, String value) {
         getSyncCommand().setrange(key, offset, value);
     }
 
     @Override
-    public String getrange(String key, long startOffset, long endOffset) {
+    public String getRange(String key, long startOffset, long endOffset) {
         return getSyncCommand().getrange(key, startOffset, endOffset);
     }
 
     @Override
-    public void sadd(String key, Object value) {
+    public void sAdd(String key, Object value) {
         getSyncCommand().sadd(key, JSON.toJSONString(value));
     }
 
     @Override
-    public Set<?> sall(String key) {
+    public Set<?> sAll(String key) {
         return getSyncCommand().smembers(key);
     }
 
     @Override
-    public boolean sdel(String key, Object value) {
+    public boolean sDel(String key, Object value) {
         return getSyncCommand().srem(key, JSON.toJSONString(value)) == 1;
     }
 

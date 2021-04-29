@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @Description luttuce 配置文件读取
- * @Author li-yuanwen
- * @Date 2021/4/8 11:43
+ *  luttuce 配置文件读取
+ * @author li-yuanwen
+ * @date 2021/4/8 11:43
  */
 @PropertySource(value = "classpath:luttuce.properties")
 public class LuttuceConfig {

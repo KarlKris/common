@@ -1,39 +1,41 @@
 package com.li.service;
 
-import com.alibaba.fastjson.JSON;
+import com.li.cache.CacheManager;
+import com.li.cache.ReferenceCounterLockHolder;
 import com.li.persist.IEntity;
-import com.li.redis.CacheManager;
 
 import java.io.Serializable;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @Description 缓存数据Service
- * @Author li-yuanwen
- * @Date 2021/4/7 16:55
+ *  缓存数据Service
+ * @author li-yuanwen
+ * @date 2021/4/7 16:55
  */
-public class CacheServiceImpl<PK extends Comparable<PK> & Serializable, T extends IEntity<PK>> implements CacheService<PK, T> {
+public class CacheServiceImpl<PK extends Comparable<PK> & Serializable, T extends IEntity<PK>>
+        implements CacheService<PK, T> {
 
-
-    private CacheManager cacheManager;
+    private CacheManager<PK, T> cacheManager;
 
     /** 主键锁 **/
     private ReferenceCounterLockHolder<PK> locks = new ReferenceCounterLockHolder<>();
 
     @Override
     public T load(PK id) {
-        Object obj = cacheManager.get(JSON.toJSONString(id));
-        if (obj != null) {
-            return (T) obj;
+        T entity = cacheManager.load(id);
+        if (entity != null) {
+            return entity;
         }
 
         // 将主键锁起，防止并发操作
         ReentrantLock lock = lockPkLock(id);
-        try{
+        lock.lock();
+        try {
             // todo 从数据库查询
 
             return null;
-        }finally {
+        } finally {
+            lock.unlock();
             releasePkLock(id, lock);
         }
 
@@ -49,19 +51,15 @@ public class CacheServiceImpl<PK extends Comparable<PK> & Serializable, T extend
         return null;
     }
 
-
     // --------------------- 私有方法 ---------------------------
 
     /** 释放主键锁 */
     private void releasePkLock(PK id, ReentrantLock lock) {
-        lock.unlock();
         locks.release(id, lock);
     }
 
     /** 获取主键锁对象 */
     private ReentrantLock lockPkLock(PK id) {
-        ReentrantLock lock = locks.acquire(id);
-        lock.lock();
-        return lock;
+        return locks.acquire(id);
     }
 }
