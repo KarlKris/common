@@ -32,5 +32,5 @@ public interface CacheService<PK extends Comparable<PK> & Serializable, T extend
      * @param id 主键
      * @return T 移除的实体
      **/
-    T remove(PK id);
+    void remove(PK id);
 }

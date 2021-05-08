@@ -1,7 +1,7 @@
 package com.li.persist;
 
 /**
- * 持久化实体基类，无论是持久化到Redis还是MySQL上
+ * 持久化实体基类
  *
  * @author li-yuanwen
  **/

@@ -15,5 +15,12 @@ public interface CacheManager<PK extends Comparable<PK>, T extends IEntity<PK>> 
      */
     T load(PK id);
 
+    /**
+     *  put 缓存
+     * @param id 主键id
+     * @param entity 新实体
+     * @return 新实体
+     */
+    T put(PK id, T entity);
 
 }

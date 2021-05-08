@@ -2,7 +2,11 @@ package com.li.service;
 
 import com.li.cache.CacheManager;
 import com.li.cache.ReferenceCounterLockHolder;
+import com.li.persist.Accessor;
 import com.li.persist.IEntity;
+import com.li.persist.WriteBackElement;
+import com.li.persist.WriteBackManager;
+import com.li.persist.WriteBackType;
 
 import java.io.Serializable;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,7 +19,17 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CacheServiceImpl<PK extends Comparable<PK> & Serializable, T extends IEntity<PK>>
         implements CacheService<PK, T> {
 
+    /** 实体类型 */
+    private Class<T> entityClz;
+
+    /** Caffeine缓存 **/
     private CacheManager<PK, T> cacheManager;
+
+    /** 数据库访问器 **/
+    private Accessor accessor;
+
+    /** 数据回写 **/
+    private WriteBackManager writeBackManager;
 
     /** 主键锁 **/
     private ReferenceCounterLockHolder<PK> locks = new ReferenceCounterLockHolder<>();
@@ -31,24 +45,28 @@ public class CacheServiceImpl<PK extends Comparable<PK> & Serializable, T extend
         ReentrantLock lock = lockPkLock(id);
         lock.lock();
         try {
-            // todo 从数据库查询
-
-            return null;
+            // 从数据库查询
+            entity = accessor.load(id, entityClz);
+            // 加入缓存
+            return cacheManager.put(id, entity);
         } finally {
             lock.unlock();
             releasePkLock(id, lock);
         }
-
     }
 
     @Override
     public void writeBack(T t) {
-
+        writeBackManager.put(new WriteBackElement(WriteBackType.UPDATE, t));
     }
 
     @Override
-    public T remove(PK id) {
-        return null;
+    public void remove(PK id) {
+        T t = load(id);
+        if (t == null) {
+            return;
+        }
+        writeBackManager.put(new WriteBackElement(WriteBackType.REMOVE, t));
     }
 
     // --------------------- 私有方法 ---------------------------
