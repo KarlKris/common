@@ -1,13 +1,9 @@
 package com.li.client;
 
 import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Description 描述

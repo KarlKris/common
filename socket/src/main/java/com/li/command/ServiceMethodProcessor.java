@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.parser.Feature;
 import com.li.session.Session;
+import jdk.nashorn.internal.ir.annotations.Ignore;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,11 +13,11 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 
 /**
- * @Description 方法执行器
+ * @Description 业务方法执行器
  * @Author li-yuanwen
  * @Date 2021/3/26 10:40
  */
-public class MethodProcessor {
+public class ServiceMethodProcessor implements MethodInvokeProcessor {
 
     /** 命令 **/
     private final Command command;
@@ -33,7 +34,7 @@ public class MethodProcessor {
     /** 是否需要验证身份 **/
     private boolean identity;
 
-    public MethodProcessor(Command command, Method method, Object target, ParameterInfo[] params) {
+    public ServiceMethodProcessor(Command command, Method method, Object target, ParameterInfo[] params) {
         this.command = command;
         this.method = method;
         this.target = target;
@@ -48,11 +49,18 @@ public class MethodProcessor {
         }
     }
 
+    @Override
+    public boolean isForward() {
+        return false;
+    }
+
+    @Override
     public boolean isIdentity() {
         return identity;
     }
 
     /** 方法调用 **/
+    @Override
     public Object invoke(Session session, byte[] body, long identityId) throws InvocationTargetException, IllegalAccessException {
         int length = params.length;
         Object[] args = new Object[length];

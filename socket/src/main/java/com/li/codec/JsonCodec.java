@@ -26,11 +26,4 @@ public class JsonCodec {
     }
 
 
-    public void encode(ByteBuf byteBuf, NettyMessage message) {
-
-    }
-
-    public NettyMessage decode(ByteBuf byteBuf) {
-        return null;
-    }
 }

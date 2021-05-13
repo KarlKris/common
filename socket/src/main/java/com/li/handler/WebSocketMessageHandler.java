@@ -1,7 +1,8 @@
 package com.li.handler;
 
+import com.li.codec.protocol.MessageCodecFactory;
+import com.li.codec.protocol.impl.GateMessage;
 import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
@@ -18,9 +19,8 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<Message
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MessageProto.Message msg) throws Exception {
         log.info("收到消息：{}", msg.toString());
-
-        MessageProto.Message resqMessage = MessageProtoFactory.createHeartBeatResqMessage();
-        ctx.channel().writeAndFlush(resqMessage);
+        GateMessage message = MessageCodecFactory.createHeartBeatResqMessage(null);
+        ctx.channel().writeAndFlush(message);
     }
 
     @Override

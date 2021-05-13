@@ -1,6 +1,5 @@
 package com.li.client;
 
-import com.li.proto.MessageProtoFactory;
 import com.li.ssl.SSLMODE;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -54,7 +53,7 @@ public class Client {
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1500)
-                    .handler(new NettyClientMessageHandler(SSLMODE.CSA.name()));
+                    .handler(new NettyClientMessageHandler());
 
             ChannelFuture future = b.connect(host, port).sync();
             channel = future.channel();
@@ -68,12 +67,6 @@ public class Client {
         }
     }
 
-    public void wirte(int module, int command, String msg) throws InterruptedException {
-        if (channel == null) {
-            connect();
-        }
-        channel.writeAndFlush(MessageProtoFactory.createServiceReqMessage(module, command, msg));
-    }
 
     private void doExecuteReconnect() {
         if (connectNum++ >= MAX_CONNECT_NUM) {
@@ -88,5 +81,8 @@ public class Client {
         }
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        new Client("127.0.0.1", 11028).connect();
+    }
 
 }

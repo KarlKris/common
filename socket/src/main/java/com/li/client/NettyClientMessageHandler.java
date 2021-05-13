@@ -1,5 +1,7 @@
 package com.li.client;
 
+import com.li.codec.protocol.MessageDecoder;
+import com.li.codec.protocol.MessageEncoder;
 import com.li.proto.MessageProto;
 import com.li.ssl.factory.SslContextFactory;
 import io.netty.channel.ChannelInitializer;
@@ -42,13 +44,13 @@ public class NettyClientMessageHandler extends ChannelInitializer<SocketChannel>
             pipeline.addFirst("SslHandler", new SslHandler(sslEngine));
         }
 
-//        pipeline.addLast("MessageEncoder", new NettyMessageEncoder());
-//        pipeline.addLast("MessageDecoder", new NettyMessageDecoder(1024 * 1024, 4, 4));
+        pipeline.addLast("MessageEncoder", new MessageEncoder());
+        pipeline.addLast("MessageDecoder", new MessageDecoder(1024 * 1024, 4, 4));
 
-        pipeline.addLast("ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
-        pipeline.addLast("ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
-        pipeline.addLast("ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
-        pipeline.addLast("ProtobufEncoder", new ProtobufEncoder());
+//        pipeline.addLast("ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
+//        pipeline.addLast("ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
+//        pipeline.addLast("ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
+//        pipeline.addLast("ProtobufEncoder", new ProtobufEncoder());
 
         pipeline.addLast("IdleStateHandler", new IdleStateHandler(0, 4, 0, TimeUnit.SECONDS));
 

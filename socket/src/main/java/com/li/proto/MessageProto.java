@@ -773,10 +773,19 @@ public final class MessageProto {
 
     /**
      * <pre>
+     * 消息序号
+     * </pre>
+     *
+     * <code>int64 sn = 1;</code>
+     */
+    long getSn();
+
+    /**
+     * <pre>
      * 消息类型
      * </pre>
      *
-     * <code>int32 type = 1;</code>
+     * <code>int32 type = 2;</code>
      */
     int getType();
 
@@ -785,7 +794,7 @@ public final class MessageProto {
      *模块号
      * </pre>
      *
-     * <code>int32 module = 2;</code>
+     * <code>int32 module = 3;</code>
      */
     int getModule();
 
@@ -794,7 +803,7 @@ public final class MessageProto {
      *命令号
      * </pre>
      *
-     * <code>int32 command = 3;</code>
+     * <code>int32 command = 4;</code>
      */
     int getCommand();
   }
@@ -811,6 +820,7 @@ public final class MessageProto {
       super(builder);
     }
     private Header() {
+      sn_ = 0L;
       type_ = 0;
       module_ = 0;
       command_ = 0;
@@ -842,15 +852,20 @@ public final class MessageProto {
               break;
             case 8: {
 
-              type_ = input.readInt32();
+              sn_ = input.readInt64();
               break;
             }
             case 16: {
 
-              module_ = input.readInt32();
+              type_ = input.readInt32();
               break;
             }
             case 24: {
+
+              module_ = input.readInt32();
+              break;
+            }
+            case 32: {
 
               command_ = input.readInt32();
               break;
@@ -887,40 +902,53 @@ public final class MessageProto {
               Header.class, Builder.class);
     }
 
-    public static final int TYPE_FIELD_NUMBER = 1;
+    public static final int SN_FIELD_NUMBER = 1;
+    private long sn_;
+    /**
+     * <pre>
+     * 消息序号
+     * </pre>
+     *
+     * <code>int64 sn = 1;</code>
+     */
+    public long getSn() {
+      return sn_;
+    }
+
+    public static final int TYPE_FIELD_NUMBER = 2;
     private int type_;
     /**
      * <pre>
      * 消息类型
      * </pre>
      *
-     * <code>int32 type = 1;</code>
+     * <code>int32 type = 2;</code>
      */
     public int getType() {
       return type_;
     }
 
-    public static final int MODULE_FIELD_NUMBER = 2;
+    public static final int MODULE_FIELD_NUMBER = 3;
     private int module_;
     /**
      * <pre>
      *模块号
      * </pre>
      *
-     * <code>int32 module = 2;</code>
+     * <code>int32 module = 3;</code>
      */
     public int getModule() {
       return module_;
     }
 
-    public static final int COMMAND_FIELD_NUMBER = 3;
+    public static final int COMMAND_FIELD_NUMBER = 4;
     private int command_;
     /**
      * <pre>
      *命令号
      * </pre>
      *
-     * <code>int32 command = 3;</code>
+     * <code>int32 command = 4;</code>
      */
     public int getCommand() {
       return command_;
@@ -940,14 +968,17 @@ public final class MessageProto {
     @Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (sn_ != 0L) {
+        output.writeInt64(1, sn_);
+      }
       if (type_ != 0) {
-        output.writeInt32(1, type_);
+        output.writeInt32(2, type_);
       }
       if (module_ != 0) {
-        output.writeInt32(2, module_);
+        output.writeInt32(3, module_);
       }
       if (command_ != 0) {
-        output.writeInt32(3, command_);
+        output.writeInt32(4, command_);
       }
       unknownFields.writeTo(output);
     }
@@ -958,17 +989,21 @@ public final class MessageProto {
       if (size != -1) return size;
 
       size = 0;
+      if (sn_ != 0L) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(1, sn_);
+      }
       if (type_ != 0) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, type_);
+          .computeInt32Size(2, type_);
       }
       if (module_ != 0) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(2, module_);
+          .computeInt32Size(3, module_);
       }
       if (command_ != 0) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(3, command_);
+          .computeInt32Size(4, command_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -986,6 +1021,8 @@ public final class MessageProto {
       Header other = (Header) obj;
 
       boolean result = true;
+      result = result && (getSn()
+          == other.getSn());
       result = result && (getType()
           == other.getType());
       result = result && (getModule()
@@ -1003,6 +1040,9 @@ public final class MessageProto {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + SN_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+          getSn());
       hash = (37 * hash) + TYPE_FIELD_NUMBER;
       hash = (53 * hash) + getType();
       hash = (37 * hash) + MODULE_FIELD_NUMBER;
@@ -1142,6 +1182,8 @@ public final class MessageProto {
       @Override
       public Builder clear() {
         super.clear();
+        sn_ = 0L;
+
         type_ = 0;
 
         module_ = 0;
@@ -1174,6 +1216,7 @@ public final class MessageProto {
       @Override
       public Header buildPartial() {
         Header result = new Header(this);
+        result.sn_ = sn_;
         result.type_ = type_;
         result.module_ = module_;
         result.command_ = command_;
@@ -1225,6 +1268,9 @@ public final class MessageProto {
 
       public Builder mergeFrom(Header other) {
         if (other == Header.getDefaultInstance()) return this;
+        if (other.getSn() != 0L) {
+          setSn(other.getSn());
+        }
         if (other.getType() != 0) {
           setType(other.getType());
         }
@@ -1263,13 +1309,51 @@ public final class MessageProto {
         return this;
       }
 
+      private long sn_ ;
+      /**
+       * <pre>
+       * 消息序号
+       * </pre>
+       *
+       * <code>int64 sn = 1;</code>
+       */
+      public long getSn() {
+        return sn_;
+      }
+      /**
+       * <pre>
+       * 消息序号
+       * </pre>
+       *
+       * <code>int64 sn = 1;</code>
+       */
+      public Builder setSn(long value) {
+        
+        sn_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * 消息序号
+       * </pre>
+       *
+       * <code>int64 sn = 1;</code>
+       */
+      public Builder clearSn() {
+        
+        sn_ = 0L;
+        onChanged();
+        return this;
+      }
+
       private int type_ ;
       /**
        * <pre>
        * 消息类型
        * </pre>
        *
-       * <code>int32 type = 1;</code>
+       * <code>int32 type = 2;</code>
        */
       public int getType() {
         return type_;
@@ -1279,7 +1363,7 @@ public final class MessageProto {
        * 消息类型
        * </pre>
        *
-       * <code>int32 type = 1;</code>
+       * <code>int32 type = 2;</code>
        */
       public Builder setType(int value) {
         
@@ -1292,7 +1376,7 @@ public final class MessageProto {
        * 消息类型
        * </pre>
        *
-       * <code>int32 type = 1;</code>
+       * <code>int32 type = 2;</code>
        */
       public Builder clearType() {
         
@@ -1307,7 +1391,7 @@ public final class MessageProto {
        *模块号
        * </pre>
        *
-       * <code>int32 module = 2;</code>
+       * <code>int32 module = 3;</code>
        */
       public int getModule() {
         return module_;
@@ -1317,7 +1401,7 @@ public final class MessageProto {
        *模块号
        * </pre>
        *
-       * <code>int32 module = 2;</code>
+       * <code>int32 module = 3;</code>
        */
       public Builder setModule(int value) {
         
@@ -1330,7 +1414,7 @@ public final class MessageProto {
        *模块号
        * </pre>
        *
-       * <code>int32 module = 2;</code>
+       * <code>int32 module = 3;</code>
        */
       public Builder clearModule() {
         
@@ -1345,7 +1429,7 @@ public final class MessageProto {
        *命令号
        * </pre>
        *
-       * <code>int32 command = 3;</code>
+       * <code>int32 command = 4;</code>
        */
       public int getCommand() {
         return command_;
@@ -1355,7 +1439,7 @@ public final class MessageProto {
        *命令号
        * </pre>
        *
-       * <code>int32 command = 3;</code>
+       * <code>int32 command = 4;</code>
        */
       public Builder setCommand(int value) {
         
@@ -1368,7 +1452,7 @@ public final class MessageProto {
        *命令号
        * </pre>
        *
-       * <code>int32 command = 3;</code>
+       * <code>int32 command = 4;</code>
        */
       public Builder clearCommand() {
         
@@ -1449,9 +1533,10 @@ public final class MessageProto {
   static {
     String[] descriptorData = {
       "\n\rmessage.proto\"0\n\007Message\022\027\n\006header\030\001 \001" +
-      "(\0132\007.Header\022\014\n\004body\030\002 \001(\014\"7\n\006Header\022\014\n\004t" +
-      "ype\030\001 \001(\005\022\016\n\006module\030\002 \001(\005\022\017\n\007command\030\003 \001" +
-      "(\005B\034\n\014com.li.protoB\014MessageProtob\006proto3"
+      "(\0132\007.Header\022\014\n\004body\030\002 \001(\014\"C\n\006Header\022\n\n\002s" +
+      "n\030\001 \001(\003\022\014\n\004type\030\002 \001(\005\022\016\n\006module\030\003 \001(\005\022\017\n" +
+      "\007command\030\004 \001(\005B\034\n\014com.li.protoB\014MessageP" +
+      "rotob\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -1476,7 +1561,7 @@ public final class MessageProto {
     internal_static_Header_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Header_descriptor,
-        new String[] { "Type", "Module", "Command", });
+        new String[] { "Sn", "Type", "Module", "Command", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

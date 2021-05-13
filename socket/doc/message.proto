@@ -9,7 +9,8 @@ message Message {
 }
 
 message Header {
-    int32 type = 1; // 消息类型
-    int32 module = 2; //模块号
-    int32 command = 3; //命令号
+    int64 sn = 1;  // 消息序号
+    int32 type = 2; // 消息类型
+    int32 module = 3; //模块号
+    int32 command = 4; //命令号
 }

@@ -1,15 +1,12 @@
 package com.li.session;
 
 import com.alibaba.fastjson.JSON;
-import com.li.codec.MessageType;
 import com.li.codec.Response;
 import com.li.command.Command;
 import com.li.command.CommandManager;
-import com.li.command.MethodProcessor;
+import com.li.command.MethodInvokeProcessor;
 import com.li.exception.ManagedException;
 import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
-import com.sun.org.apache.regexp.internal.RE;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,6 +27,9 @@ public class MessageDispatcher {
     // 业务处理线程池
     private ExecutorService[] serviceExecutors;
 
+    // 转发处理线程池
+    private ExecutorService[] forwardExecutors;
+
     // 方法处理器
     private final CommandManager commandManager;
 
@@ -37,7 +37,7 @@ public class MessageDispatcher {
         this.commandManager = new CommandManager();
     }
 
-    private void checkAndInitExecutors() {
+    private void checkAndInitServiceExecutors() {
         if (serviceExecutors == null) {
             synchronized (this) {
                 if (serviceExecutors != null) {
@@ -54,10 +54,35 @@ public class MessageDispatcher {
         }
     }
 
+    private void checkAndInitForwardExecutors() {
+        if (forwardExecutors == null) {
+            synchronized (this) {
+                if (forwardExecutors != null) {
+                    return;
+                }
+                int num = Runtime.getRuntime().availableProcessors() + 1;
+                forwardExecutors = new ExecutorService[num];
+
+                for (int i = 0; i < num; i++) {
+                    forwardExecutors[i] = new ThreadPoolExecutor(1, 1,
+                            0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1000), new DefaultThreadFactory("forward-thread-pool "));
+                }
+            }
+        }
+    }
+
 
     public void dispatcher(MessageProto.Message message, Session session) {
-        // 检查并初始化线程池
-        checkAndInitExecutors();
+        Command c = getCommandFromMessage(message);
+        MethodInvokeProcessor methodProcessor = commandManager.getMethodProcessor(c);
+        if (methodProcessor.isIdentity() && !session.hasIdentity()) {
+            return;
+        }
+
+        byte[] body = message.getBody().toByteArray();
+        if (log.isInfoEnabled()) {
+            log.info("收到请求[{},{}]]", c, body.length);
+        }
 
         int hash;
         if (session.hasIdentity()) {
@@ -65,35 +90,37 @@ public class MessageDispatcher {
         }else {
             hash = hash(session.getId());
         }
-        serviceExecutors[getExecutorsIndex(hash)]
-                .submit(() -> processMessage(message, session));
+
+        if (methodProcessor.isForward()) {
+            // 检查并初始化线程池
+            checkAndInitForwardExecutors();
+            forwardExecutors[getExecutorsIndex(hash)]
+                    .submit(() -> processMessage(methodProcessor, body,  session));
+        }else {
+            // 检查并初始化线程池
+            checkAndInitServiceExecutors();
+            serviceExecutors[getExecutorsIndex(hash)]
+                    .submit(() -> processMessage(methodProcessor, body,  session));
+        }
     }
 
     public void commandRegister(Object instance) {
         commandManager.commandRegister(instance);
     }
 
-    private void processMessage(MessageProto.Message message, Session session) {
+    private Command getCommandFromMessage(MessageProto.Message message) {
         MessageProto.Header header = message.getHeader();
         int module = header.getModule();
         int command = header.getCommand();
 
-        Command c = new Command(module, command);
+        return new Command(module, command);
+    }
 
-        byte[] bytes = message.getBody().toByteArray();
-
-        if (log.isInfoEnabled()) {
-            log.info("收到请求[{},{}]]", c, bytes.length);
-        }
-
-        MethodProcessor methodProcessor = commandManager.getMethodProcessor(c);
-        if (methodProcessor.isIdentity() && !session.hasIdentity()) {
-            return;
-        }
+    private void processMessage(MethodInvokeProcessor processor, byte[] body, Session session) {
 
         Response response = null;
         try {
-            Object content = methodProcessor.invoke(session, bytes, session.getIdentity());
+            Object content = processor.invoke(session, body, session.getIdentity());
             if (content instanceof Void) {
                 response = Response.emptyResponce();
             }else {
@@ -109,7 +136,7 @@ public class MessageDispatcher {
             response = Response.unknowErrorResponce();
         }
 
-        session.getChannel().writeAndFlush(MessageProtoFactory.createServiceResqMessage(JSON.toJSONString(response)));
+        session.getChannel().writeAndFlush(JSON.toJSONString(response));
     }
 
     /**

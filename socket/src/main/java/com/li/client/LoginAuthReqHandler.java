@@ -1,9 +1,8 @@
 package com.li.client;
 
-import com.google.protobuf.ByteString;
-import com.li.codec.MessageType;
-import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
+import com.li.codec.protocol.MessageCodecFactory;
+import com.li.codec.protocol.MessageType;
+import com.li.codec.protocol.impl.GateMessage;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,26 +21,22 @@ public class LoginAuthReqHandler extends ChannelDuplexHandler {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         log.info("[客户端]三次握手成功后发送安全认证请求");
         // 三次握手成功后发送安全认证请求
-        ctx.writeAndFlush(MessageProtoFactory.createLoginAuthReqMessage());
+        ctx.writeAndFlush(MessageCodecFactory.createLoginAuthReqMessage());
 
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // 接收服务端安全认证响应
-//        NettyMessage message = (NettyMessage) msg;
-        MessageProto.Message message = (MessageProto.Message) msg;
-        // 仅处理安全认证响应
-        MessageProto.Header header = message.getHeader();
-        if (header != null && header.getType() == MessageType.LOGIN_RESP.getValue()) {
-            ByteString body = message.getBody();
-            String s = body.toStringUtf8();
-            if (!"SUCCESS".equals(s)) {
-                ctx.close();
-            } else {
-                log.info("[客户端]收到验证成功消息");
-                ctx.fireChannelRead(msg);
+        if (msg instanceof GateMessage) {
+            GateMessage message = (GateMessage) msg;
+            if (message.getMessageType() == MessageType.LOGIN_RESP) {
+                if (!"SUCCESS".equals(new String(message.getBody()))) {
+                    ctx.close();
+                } else {
+                    log.info("[客户端]收到验证成功消息");
+                    ctx.fireChannelRead(msg);
+                }
             }
         } else {
             ctx.fireChannelRead(msg);

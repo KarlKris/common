@@ -1,13 +1,15 @@
 package com.li.client;
 
-import com.li.codec.MessageType;
+import com.li.codec.protocol.MessageCodecFactory;
+import com.li.codec.protocol.MessageType;
+import com.li.codec.protocol.impl.GateMessage;
 import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,13 +23,11 @@ public class HeartBeatReqHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-//        NettyMessage message = (NettyMessage) msg;
-        MessageProto.Message message = (MessageProto.Message) msg;
-        MessageProto.Header header = message.getHeader();
-
-        if (header != null && header.getType() == MessageType.HEART_BEAT_RESP.getValue()) {
-            // 心跳响应
-
+        if (msg instanceof GateMessage) {
+            if (((GateMessage) msg).getMessageType() == MessageType.HEART_BEAT_RESP) {
+                // 释放请求消息
+                ReferenceCountUtil.release(msg);
+            }
         } else {
             ctx.fireChannelRead(msg);
         }
@@ -39,7 +39,7 @@ public class HeartBeatReqHandler extends ChannelDuplexHandler {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.WRITER_IDLE) {
-                MessageProto.Message message = MessageProtoFactory.createHeartBeatReqMessage();
+                GateMessage message = MessageCodecFactory.createHeartBeatReqMessage();
                 ctx.writeAndFlush(message);
             }
         } else {

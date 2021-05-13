@@ -1,61 +1,55 @@
-package com.li.codec;
+package com.li.codec.protocol;
 
 /**
  * @Description 消息头的type
  * @Author li-yuanwen
  * @Date 2020/4/11 1:15
  */
-public enum MessageType {
+public interface MessageType {
 
     /**
      * 安全认证请求消息
      */
-    LOGIN_REQ((byte) 1),
+    byte LOGIN_REQ = 1;
 
     /**
      * 安全请求响应消息
      */
-    LOGIN_RESP((byte) 2),
+    byte LOGIN_RESP = 2;
 
     /**
      * 心跳检测请求消息
      */
-    HEART_BEAT_REQ((byte) 3),
+    byte HEART_BEAT_REQ = 3;
 
     /**
      * 心跳检测响应消息
      */
-    HEART_BEAT_RESP((byte) 4),
+    byte HEART_BEAT_RESP = 4;
 
     /**
      * 业务请求消息
      **/
-    REQUEST((byte) 5),
+    byte REQUEST = 5;
 
     /**
      * 业务响应消息
      **/
-    RESPONSE((byte) 6),
+    byte RESPONSE = 6;
 
     /**
      * 请求转发
      */
-    FORWARD_REQ((byte) 7),
+    byte FORWARD_REQ = 7;
 
     /**
      * 响应转发
      */
-    FORWARD_RESP((byte) 8),
+    byte FORWARD_RESP = 8;
 
-    ;
 
-    private byte value;
-
-    public byte getValue() {
-        return value;
+    static boolean isGateMessageType(byte type) {
+        return type != REQUEST && type != RESPONSE;
     }
 
-    MessageType(byte value) {
-        this.value = value;
-    }
 }

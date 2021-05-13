@@ -23,9 +23,9 @@ public class CommandManager {
     /**
      * 命令2方法执行器
      **/
-    private Map<Command, MethodProcessor> command2Processors = new ConcurrentHashMap<>();
+    private Map<Command, MethodInvokeProcessor> command2Processors = new ConcurrentHashMap<>();
 
-    public MethodProcessor getMethodProcessor(Command command) {
+    public MethodInvokeProcessor getMethodProcessor(Command command) {
         return command2Processors.get(command);
     }
 
@@ -36,35 +36,35 @@ public class CommandManager {
             return;
         }
 
+        // 业务模块
         SocketModule socketModule = AnnotationUtils.findAnnotation(clz, SocketModule.class);
-        if (socketModule == null) {
-            return;
-        }
-        int module = socketModule.module();
+        if (socketModule != null) {
+            int module = socketModule.module();
 
-        for (Method method : clz.getDeclaredMethods()) {
-            SocketCommand socketCommand = AnnotationUtils.findAnnotation(method, SocketCommand.class);
-            if (socketCommand == null) {
-                continue;
-            }
+            for (Method method : clz.getDeclaredMethods()) {
+                SocketCommand socketCommand = AnnotationUtils.findAnnotation(method, SocketCommand.class);
+                if (socketCommand == null) {
+                    continue;
+                }
 
-            int command = socketCommand.command();
+                int command = socketCommand.command();
 
-            Parameter[] parameters = method.getParameters();
-            int length = parameters.length;
-            ParameterInfo[] infos = new ParameterInfo[length];
-            for (int i = 0; i < length; i++) {
-                Parameter parameter = parameters[i];
-                SessionId sessionId = parameter.getAnnotation(SessionId.class);
+                Parameter[] parameters = method.getParameters();
+                int length = parameters.length;
+                ParameterInfo[] infos = new ParameterInfo[length];
+                for (int i = 0; i < length; i++) {
+                    Parameter parameter = parameters[i];
+                    SessionId sessionId = parameter.getAnnotation(SessionId.class);
 
-                infos[i] = new ParameterInfo(parameter.getName()
-                        , parameter.getParameterizedType(), sessionId != null);
-            }
+                    infos[i] = new ParameterInfo(parameter.getName()
+                            , parameter.getParameterizedType(), sessionId != null);
+                }
 
-            Command c = new Command(module, command);
-            MethodProcessor pre = command2Processors.putIfAbsent(c, new MethodProcessor(c, method, target, infos));
-            if (pre != null) {
-                throw new RuntimeException("注册重复命令号：" + module + "," + command);
+                Command c = new Command(module, command);
+                MethodInvokeProcessor pre = command2Processors.putIfAbsent(c, new ServiceMethodProcessor(c, method, target, infos));
+                if (pre != null) {
+                    throw new RuntimeException("注册重复命令号：" + module + "," + command);
+                }
             }
         }
 

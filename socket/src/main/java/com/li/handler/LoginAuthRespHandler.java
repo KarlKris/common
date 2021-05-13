@@ -1,8 +1,8 @@
 package com.li.handler;
 
-import com.li.codec.MessageType;
-import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
+import com.li.codec.protocol.MessageCodecFactory;
+import com.li.codec.protocol.MessageType;
+import com.li.codec.protocol.impl.GateMessage;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -30,31 +30,29 @@ public class LoginAuthRespHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-//        NettyMessage message = (NettyMessage) msg;
-        MessageProto.Message message = (MessageProto.Message) msg;
+        if (msg instanceof GateMessage) {
+            GateMessage message = (GateMessage) msg;
+            if (message.getMessageType() == MessageType.LOGIN_REQ) {
+                String ip = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
 
-        // 仅处理登录请求
-        MessageProto.Header header = message.getHeader();
-        if (header != null && header.getType() == MessageType.LOGIN_REQ.getValue()) {
-            // 响应消息
-            MessageProto.Message respMessage = null;
+                GateMessage respMessage;
+                // 重复登录，拒绝
+                if (loginIps.containsKey(ip)) {
+                    respMessage = MessageCodecFactory.createLoginAuthRespMessage(message, LOGIN_FAIL);
+                } else {
+                    respMessage = MessageCodecFactory.createLoginAuthRespMessage(message, LOGIN_SUCCESS);
+                    loginIps.put(ip, true);
 
-            String ip = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
-            // 重复登录，拒绝
-            if (loginIps.containsKey(ip)) {
-                respMessage = MessageProtoFactory.createLoginAuthRespMessage(LOGIN_FAIL);
-            } else {
-                respMessage = MessageProtoFactory.createLoginAuthRespMessage(LOGIN_SUCCESS);
-                loginIps.put(ip, true);
+                    log.info("[服务端]收到ip-[{}]的客户端登录请求，返回消息为-[{}]", ip, respMessage.getBody());
+                }
+                ctx.writeAndFlush(respMessage);
 
-                log.info("[服务端]收到ip-[{}]的客户端登录请求，返回消息为-[{}]", ip, respMessage.getBody());
+                // 释放请求消息
+                ReferenceCountUtil.release(msg);
             }
-            ctx.writeAndFlush(respMessage);
-
-            // 释放请求消息
-            ReferenceCountUtil.release(msg);
-        } else {
+        }else {
             ctx.fireChannelRead(msg);
         }
+
     }
 }

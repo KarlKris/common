@@ -1,5 +1,7 @@
 package com.li.handler;
 
+import com.li.codec.protocol.MessageDecoder;
+import com.li.codec.protocol.MessageEncoder;
 import com.li.proto.MessageProto;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -55,13 +57,6 @@ public class ProtocolSelectorHandler extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-//        String protocol = getBufStart(in);
-//        log.info("协议选择处理器收到消息头:{}", protocol);
-//        if (protocol.startsWith(WEBSOCKET_PREFIX)) {
-//            webSocketAdd(ctx);
-//        } else {
-//            customizeAdd(ctx);
-//        }
         short value = getBufStartShort(in);
         in.resetReaderIndex();
         log.info("协议选择处理器收到消息头:{}", value);
@@ -150,13 +145,14 @@ public class ProtocolSelectorHandler extends ByteToMessageDecoder {
     }
 
     private void customizeAdd(ChannelHandlerContext ctx) throws IOException {
-//        ctx.pipeline().addBefore("idleStateHandler", "MessageEncoder", new NettyMessageEncoder());
-//        ctx.pipeline().addBefore("idleStateHandler", "MessageDecoder", new NettyMessageDecoder(1024 * 1024, 4, 4));
+        // 编解码器
+        ctx.pipeline().addBefore("idleStateHandler", "MessageEncoder", new MessageEncoder());
+        ctx.pipeline().addBefore("idleStateHandler", "MessageDecoder", new MessageDecoder(1024 * 1024, 4, 4));
 
-        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
-        ctx.pipeline().addBefore("idleStateHandler", "ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
-        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
-        ctx.pipeline().addBefore("idleStateHandler", "ProtobufEncoder", new ProtobufEncoder());
+//        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
+//        ctx.pipeline().addBefore("idleStateHandler", "ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
+//        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
+//        ctx.pipeline().addBefore("idleStateHandler", "ProtobufEncoder", new ProtobufEncoder());
 
         ctx.pipeline().addAfter("idleStateHandler", "LoginAuthRespHandler", new LoginAuthRespHandler());
         ctx.pipeline().addAfter("idleStateHandler", "HeartBeatRespHandler", new HeartBeatRespHandler());

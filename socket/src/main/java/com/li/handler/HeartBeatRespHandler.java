@@ -1,8 +1,9 @@
 package com.li.handler;
 
-import com.li.codec.MessageType;
+import com.li.codec.protocol.MessageCodecFactory;
+import com.li.codec.protocol.MessageType;
+import com.li.codec.protocol.impl.GateMessage;
 import com.li.proto.MessageProto;
-import com.li.proto.MessageProtoFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,16 +26,16 @@ public class HeartBeatRespHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        MessageProto.Message message = (MessageProto.Message) msg;
+        if (msg instanceof GateMessage) {
+            GateMessage message = (GateMessage) msg;
+            if (message.getMessageType() == MessageType.HEART_BEAT_REQ) {
 
-        MessageProto.Header header = message.getHeader();
+                GateMessage resqMessage = MessageCodecFactory.createHeartBeatResqMessage(message);
+                ctx.writeAndFlush(resqMessage);
 
-        if (header != null && header.getType() == MessageType.HEART_BEAT_REQ.getValue()) {
-            MessageProto.Message resqMessage = MessageProtoFactory.createHeartBeatResqMessage();
-            ctx.writeAndFlush(resqMessage);
-
-            // 释放请求消息
-            ReferenceCountUtil.release(msg);
+                // 释放请求消息
+                ReferenceCountUtil.release(msg);
+            }
         }else {
             ctx.fireChannelRead(msg);
         }
