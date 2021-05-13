@@ -44,11 +44,11 @@ public class MessageCodecFactory {
         // 它是利用自定义消息中，带有数据包有效长度来解决TCP粘包现象
         // 这里的数据包中，先写入校验码（int,4个字节）,长度(int,4个字节),(有效内容)
         // 即需要满足0 = 数据包总长度 - lengthFieldOffset(有效长度下标) - lengthFieldLength(有效长度所占字节数) - 长度域的值(12)
-        // 在心跳检测中  0 = 26 - 4 - 4 - 18，所以这里长度要减去消息类型字节数4和长度字节数4
+        // 在心跳检测中  0 = 26 - 4 - 4 - 18，所以这里长度要减去消息类型字节数1和长度字节数4
         // https://www.jianshu.com/p/64dc7ee8c713
         int i = out.readableBytes();
         // ByteBuf index为1个字节,这里长度字段是从第4字节开始的
-        out.setInt(4, i - 8);
+        out.setInt(1, i - 5);
 
     }
 
@@ -71,7 +71,7 @@ public class MessageCodecFactory {
     }
 
     public static void encodeInnerMessage(InnerMessage message, ByteBuf out) {
-        out.writeInt(message.getMessageType());
+        out.writeByte(message.getMessageType());
         out.writeInt(message.getHeader().getLength());
         out.writeLong(message.getHeader().getSn());
         out.writeInt(message.getHeader().getModule());
@@ -96,7 +96,7 @@ public class MessageCodecFactory {
         // https://www.jianshu.com/p/64dc7ee8c713
         int i = out.readableBytes();
         // ByteBuf index为1个字节,这里长度字段是从第4字节开始的
-        out.setInt(4, i - 8);
+        out.setInt(1, i - 5);
     }
 
     public static GateMessage createLoginAuthReqMessage() {

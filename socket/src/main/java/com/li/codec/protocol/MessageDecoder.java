@@ -18,6 +18,9 @@ public class MessageDecoder extends LengthFieldBasedFrameDecoder {
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
         ByteBuf buf = (ByteBuf) super.decode(ctx, in);
+        if (buf == null) {
+            return null;
+        }
 
         // 消息类型
         byte messageType = buf.readByte();

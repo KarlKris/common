@@ -45,14 +45,14 @@ public class NettyClientMessageHandler extends ChannelInitializer<SocketChannel>
         }
 
         pipeline.addLast("MessageEncoder", new MessageEncoder());
-        pipeline.addLast("MessageDecoder", new MessageDecoder(1024 * 1024, 4, 4));
+        pipeline.addLast("MessageDecoder", new MessageDecoder(1024 * 1024, 1, 4));
 
 //        pipeline.addLast("ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
 //        pipeline.addLast("ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
 //        pipeline.addLast("ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
 //        pipeline.addLast("ProtobufEncoder", new ProtobufEncoder());
 
-        pipeline.addLast("IdleStateHandler", new IdleStateHandler(0, 4, 0, TimeUnit.SECONDS));
+        pipeline.addLast("IdleStateHandler", new IdleStateHandler(0, 30, 0, TimeUnit.SECONDS));
 
         pipeline.addLast("ReadTimeoutHandler", new ReadTimeoutHandler(30));
 

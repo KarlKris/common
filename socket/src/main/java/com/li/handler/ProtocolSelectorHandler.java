@@ -147,7 +147,7 @@ public class ProtocolSelectorHandler extends ByteToMessageDecoder {
     private void customizeAdd(ChannelHandlerContext ctx) throws IOException {
         // 编解码器
         ctx.pipeline().addBefore("idleStateHandler", "MessageEncoder", new MessageEncoder());
-        ctx.pipeline().addBefore("idleStateHandler", "MessageDecoder", new MessageDecoder(1024 * 1024, 4, 4));
+        ctx.pipeline().addBefore("idleStateHandler", "MessageDecoder", new MessageDecoder(1024 * 1024, 1, 4));
 
 //        ctx.pipeline().addBefore("idleStateHandler", "ProtobufVarint32FrameDecoder", new ProtobufVarint32FrameDecoder());
 //        ctx.pipeline().addBefore("idleStateHandler", "ProtobufDecoder", new ProtobufDecoder(MessageProto.Message.getDefaultInstance()));
