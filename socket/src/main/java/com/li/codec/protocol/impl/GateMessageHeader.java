@@ -22,4 +22,14 @@ public class GateMessageHeader {
     /** 消息体是否压缩 **/
     private boolean zip;
 
+    @Override
+    public String toString() {
+        return "GateMessageHeader{" +
+                "type=" + type +
+                ", length=" + length +
+                ", module=" + module +
+                ", command=" + command +
+                ", zip=" + zip +
+                '}';
+    }
 }

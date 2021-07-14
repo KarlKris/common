@@ -35,8 +35,8 @@ public class HeartBeatReqHandler extends ChannelDuplexHandler {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        log.info("[客户端]心跳检测");
         if (evt instanceof IdleStateEvent) {
+            log.info("[客户端]心跳检测");
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.WRITER_IDLE) {
                 GateMessage message = MessageCodecFactory.createHeartBeatReqMessage();

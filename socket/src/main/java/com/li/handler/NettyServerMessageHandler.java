@@ -48,9 +48,9 @@ public class NettyServerMessageHandler extends ChannelInitializer<SocketChannel>
 
         pipeline.addLast("protocolSelectorHandler", new ProtocolSelectorHandler());
         // 心跳检测
-        pipeline.addLast("idleStateHandler", new IdleStateHandler(5, 0, 0, TimeUnit.SECONDS));
-
-        pipeline.addLast(messageHandler);
+        pipeline.addLast("idleStateHandler", new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
+        // 内部通信消息处理器
+        pipeline.addLast("innerMessageHandler", messageHandler);
 
     }
 }

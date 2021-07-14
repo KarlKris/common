@@ -11,6 +11,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -32,57 +33,49 @@ public class Client {
     private EventLoopGroup group;
     private Channel channel;
 
-    // 尝试重连次数
-    public static final int MAX_CONNECT_NUM = 5;
-    public int connectNum = 0;
-    private ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L
-            , TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new DefaultThreadFactory("客户端断线重连单线程执行器"));
-
-    Client(String host, int port) {
+    Client(String host, int port, EventLoopGroup group) {
         this.host = host;
         this.port = port;
+        this.group = group;
+    }
+
+    Client(InetSocketAddress address, EventLoopGroup group) {
+        this.host = address.getHostName();
+        this.port = address.getPort();
+        this.group = group;
     }
 
 
-    public void connect() throws InterruptedException {
-        try {
-            // 配置客户端
-            group = new NioEventLoopGroup();
-            Bootstrap b = new Bootstrap();
-            b.group(group)
-                    .channel(NioSocketChannel.class)
-                    .option(ChannelOption.TCP_NODELAY, true)
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1500)
-                    .handler(new NettyClientMessageHandler());
+    public Client connect() {
+        // 配置客户端
+        Bootstrap b = new Bootstrap();
+        b.group(group)
+                .channel(NioSocketChannel.class)
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1500)
+                .handler(new NettyClientMessageHandler(SSLMODE.CSA.name()));
 
-            ChannelFuture future = b.connect(host, port).sync();
+        ChannelFuture future = null;
+        try {
+            future = b.connect(host, port).sync();
             channel = future.channel();
             log.info("----------客户端连接[{}]成功---------", host + ":" + port);
-
-            channel.closeFuture().sync();
-        } finally {
-            // 先释放资源，在重连
-            group.shutdownGracefully();
-            executorService.execute(this::doExecuteReconnect);
-        }
-    }
-
-
-    private void doExecuteReconnect() {
-        if (connectNum++ >= MAX_CONNECT_NUM) {
-            // 关闭线程池
-            executorService.shutdown();
-            return;
-        }
-        try {
-            connect();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("客户端连接[{}:{}]失败", host, port);
         }
+        return this;
+
     }
+
+    public void close() {
+        group.shutdownGracefully();
+        channel.close();
+    }
+
+
 
     public static void main(String[] args) throws InterruptedException {
-        new Client("127.0.0.1", 11028).connect();
+        new Client("127.0.0.1", 11028, new NioEventLoopGroup()).connect();
     }
 
 }

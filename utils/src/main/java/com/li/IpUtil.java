@@ -2,6 +2,7 @@ package com.li;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
@@ -12,6 +13,24 @@ import java.util.Enumeration;
  **/
 public class IpUtil {
 
+    /**
+     * 计算InetSocketAddress
+     **/
+    public static InetSocketAddress calInetSocketAddressByAddress(String addr) {
+        int colonIndex = addr.lastIndexOf(":");
+        if (colonIndex < 0) {
+            return new InetSocketAddress(Integer.parseInt(addr));
+        }
+        int port = Integer.parseInt((addr.substring(colonIndex + 1)));
+        if (colonIndex > 0) {
+            String host = addr.substring(0, colonIndex);
+            if (!"*".equals(host)) {
+                return new InetSocketAddress(host, port);
+            }
+        }
+
+        return new InetSocketAddress(port);
+    }
 
     /**
      * 获取内网ip地址

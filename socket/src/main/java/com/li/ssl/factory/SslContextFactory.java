@@ -40,16 +40,16 @@ public class SslContextFactory {
                         mode,
                         null,
                         System.getProperty("user.dir")
-                                + "/socket/src/main/java/com/li/ssl/conf/oneway/sslSecureClient.jks")
+                                + "/common/socket/src/main/java/com/li/ssl/conf/oneway/sslSecureClient.jks")
                         .createSSLEngine();
                 break;
             case CSA:
                 sslEngine = getClientContext(
                         mode,
                         System.getProperty("user.dir")
-                                + "/socket/src/main/java/com/li/ssl/conf/twoway/sslSecureClient.jks",
+                                + "/common/socket/src/main/java/com/li/ssl/conf/twoway/sslSecureServer.jks",
                         System.getProperty("user.dir")
-                                + "/socket/src/main/java/com/li/ssl/conf/twoway/sslSecureClient.jks")
+                                + "/common/socket/src/main/java/com/li/ssl/conf/twoway/sslSecureClient.jks")
                         .createSSLEngine();
                 sslEngine.setNeedClientAuth(true);
                 break;
@@ -139,10 +139,8 @@ public class SslContextFactory {
                     KeyStore ks = KeyStore.getInstance("JKS");
                     in = new FileInputStream(pkPath);
                     ks.load(in, PASSWORD.toCharArray());
-                    // ks.load(in, "123456".toCharArray());
                     kmf = KeyManagerFactory.getInstance("SunX509");
                     kmf.init(ks, PASSWORD.toCharArray());
-                    // kmf.init(ks, "123456".toCharArray());
                 }
 
                 // Set up trust manager factory to use our key store

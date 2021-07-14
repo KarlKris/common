@@ -52,7 +52,7 @@ public class NettyClientMessageHandler extends ChannelInitializer<SocketChannel>
 //        pipeline.addLast("ProtobufVarint32LengthFieldPrepender", new ProtobufVarint32LengthFieldPrepender());
 //        pipeline.addLast("ProtobufEncoder", new ProtobufEncoder());
 
-        pipeline.addLast("IdleStateHandler", new IdleStateHandler(0, 30, 0, TimeUnit.SECONDS));
+        pipeline.addLast("IdleStateHandler", new IdleStateHandler(0, 20, 0, TimeUnit.SECONDS));
 
         pipeline.addLast("ReadTimeoutHandler", new ReadTimeoutHandler(30));
 

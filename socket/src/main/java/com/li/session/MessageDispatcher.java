@@ -1,7 +1,11 @@
 package com.li.session;
 
 import com.alibaba.fastjson.JSON;
+import com.jsoniter.JsonIterator;
+import com.jsoniter.output.JsonStream;
 import com.li.codec.Response;
+import com.li.codec.protocol.impl.InnerMessage;
+import com.li.codec.protocol.impl.InnerMessageHeader;
 import com.li.command.Command;
 import com.li.command.CommandManager;
 import com.li.command.MethodInvokeProcessor;
@@ -27,9 +31,6 @@ public class MessageDispatcher {
     // 业务处理线程池
     private ExecutorService[] serviceExecutors;
 
-    // 转发处理线程池
-    private ExecutorService[] forwardExecutors;
-
     // 方法处理器
     private final CommandManager commandManager;
 
@@ -54,32 +55,14 @@ public class MessageDispatcher {
         }
     }
 
-    private void checkAndInitForwardExecutors() {
-        if (forwardExecutors == null) {
-            synchronized (this) {
-                if (forwardExecutors != null) {
-                    return;
-                }
-                int num = Runtime.getRuntime().availableProcessors() + 1;
-                forwardExecutors = new ExecutorService[num];
-
-                for (int i = 0; i < num; i++) {
-                    forwardExecutors[i] = new ThreadPoolExecutor(1, 1,
-                            0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1000), new DefaultThreadFactory("forward-thread-pool "));
-                }
-            }
-        }
-    }
-
-
-    public void dispatcher(MessageProto.Message message, Session session) {
+    public void dispatcher(InnerMessage message, Session session) {
         Command c = getCommandFromMessage(message);
         MethodInvokeProcessor methodProcessor = commandManager.getMethodProcessor(c);
         if (methodProcessor.isIdentity() && !session.hasIdentity()) {
             return;
         }
 
-        byte[] body = message.getBody().toByteArray();
+        byte[] body = message.getBody();
         if (log.isInfoEnabled()) {
             log.info("收到请求[{},{}]]", c, body.length);
         }
@@ -91,25 +74,18 @@ public class MessageDispatcher {
             hash = hash(session.getId());
         }
 
-        if (methodProcessor.isForward()) {
-            // 检查并初始化线程池
-            checkAndInitForwardExecutors();
-            forwardExecutors[getExecutorsIndex(hash)]
-                    .submit(() -> processMessage(methodProcessor, body,  session));
-        }else {
-            // 检查并初始化线程池
-            checkAndInitServiceExecutors();
-            serviceExecutors[getExecutorsIndex(hash)]
-                    .submit(() -> processMessage(methodProcessor, body,  session));
-        }
+        // 检查并初始化线程池
+        checkAndInitServiceExecutors();
+        serviceExecutors[getExecutorsIndex(hash)]
+                .submit(() -> processMessage(methodProcessor, body,  session));
     }
 
     public void commandRegister(Object instance) {
         commandManager.commandRegister(instance);
     }
 
-    private Command getCommandFromMessage(MessageProto.Message message) {
-        MessageProto.Header header = message.getHeader();
+    private Command getCommandFromMessage(InnerMessage message) {
+        InnerMessageHeader header = message.getHeader();
         int module = header.getModule();
         int command = header.getCommand();
 
@@ -136,7 +112,8 @@ public class MessageDispatcher {
             response = Response.unknowErrorResponce();
         }
 
-        session.getChannel().writeAndFlush(JSON.toJSONString(response));
+
+        session.getChannel().writeAndFlush(JsonStream.serialize(response));
     }
 
     /**

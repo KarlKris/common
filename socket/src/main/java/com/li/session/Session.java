@@ -1,9 +1,12 @@
 package com.li.session;
 
+import com.jsoniter.annotation.JsonIgnore;
 import io.netty.util.AttributeKey;
 
 import io.netty.channel.Channel;
 import lombok.Getter;
+
+import java.net.InetSocketAddress;
 
 /**
  * @Description 连接信息上下文
@@ -40,6 +43,11 @@ public class Session {
         this.id = id;
         this.channel = channel;
         this.lastTime = System.currentTimeMillis();
+    }
+
+    public String getIp() {
+        InetSocketAddress ipSocket = (InetSocketAddress)this.channel.remoteAddress();
+        return ipSocket.getAddress().getHostAddress();
     }
 
     public boolean hasIdentity() {

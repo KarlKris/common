@@ -4,6 +4,7 @@ import com.li.codec.protocol.impl.GateMessage;
 import com.li.codec.protocol.impl.GateMessageHeader;
 import com.li.codec.protocol.impl.InnerMessage;
 import com.li.codec.protocol.impl.InnerMessageHeader;
+import com.li.session.Session;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.StandardCharsets;
@@ -39,7 +40,7 @@ public class MessageCodecFactory {
         out.writeInt(bodyLength);
         out.writeBytes(message.getBody());
 
-        // ?原因 这里为什么要减去8
+        // ?原因 这里为什么要减去5
         // 解：因为使用了Netty的LengthFieldBasedFrameDecoder来对消息解码，
         // 它是利用自定义消息中，带有数据包有效长度来解决TCP粘包现象
         // 这里的数据包中，先写入校验码（int,4个字节）,长度(int,4个字节),(有效内容)
@@ -147,6 +148,18 @@ public class MessageCodecFactory {
                 .build();
 
         return new GateMessage(header, new byte[0]);
+    }
 
+    public static InnerMessage buildInnerMessageByGateMessageAndSession(GateMessage gateMessage, Session session, long sn) {
+        InnerMessageHeader.InnerMessageHeaderBuilder builder = InnerMessageHeader.builder();
+        InnerMessageHeader header = builder.type(MessageType.FORWARD_REQ)
+                .ip(session.getIp())
+                .sessionId(session.getIdentity())
+                .zip(gateMessage.getHeader().isZip())
+                .module(gateMessage.getHeader().getModule())
+                .command(gateMessage.getHeader().getCommand())
+                .sn(sn).length(0).build();
+
+        return new InnerMessage(header, gateMessage.getBody());
     }
 }

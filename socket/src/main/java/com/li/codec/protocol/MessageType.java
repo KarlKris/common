@@ -47,9 +47,13 @@ public interface MessageType {
      */
     byte FORWARD_RESP = 8;
 
-
+    /**
+     *
+     * @param type
+     * @return
+     */
     static boolean isGateMessageType(byte type) {
-        return type != REQUEST && type != RESPONSE;
+        return type != FORWARD_REQ && type != FORWARD_RESP;
     }
 
 }

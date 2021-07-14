@@ -66,7 +66,7 @@ public class Server implements DisposableBean {
                 // 与 ServerBootrapAcceptor一起为新连接做处理
                 // 新连接完成后只有子Handler才会加到Channel中
 //                .handler(new FatherHandler())
-                .childHandler(new NettyServerMessageHandler());
+                .childHandler(new NettyServerMessageHandler(SSLMODE.CSA.name()));
         // 绑定端口号
         ChannelFuture future = bootstrap.bind(port).sync();
 

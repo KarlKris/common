@@ -1,8 +1,8 @@
 package com.li.handler;
 
-import com.li.codec.protocol.impl.InnerMessage;
-import com.li.proto.MessageProto;
-import com.li.session.MessageDispatcher;
+import com.li.codec.protocol.MessageType;
+import com.li.codec.protocol.impl.GateMessage;
+import com.li.gateway.GatewayManager;
 import com.li.session.Session;
 import com.li.session.SessionManager;
 import io.netty.channel.Channel;
@@ -13,26 +13,23 @@ import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * @Description 业务处理逻辑入口
- * @Author li-yuanwen
- * @Date 2021/3/16 15:06
+ * @author li-yuanwen
+ *
+ * 外部消息转发到内部处理器
  */
 @ChannelHandler.Sharable
 @Slf4j
-public class ServerMessageHandler extends ChannelDuplexHandler {
+public class GatewayHandler extends ChannelDuplexHandler {
 
-    /**
-     * 消息分发器
-     **/
-    private final MessageDispatcher dispatcher;
-    /**
-     * Session管理器
-     **/
+    /** Session管理 **/
     private final SessionManager sessionManager;
 
-    public ServerMessageHandler(MessageDispatcher dispatcher, SessionManager sessionManager) {
-        this.dispatcher = dispatcher;
+    /** 网关管理 **/
+    private GatewayManager gatewayManager;
+
+    public GatewayHandler(SessionManager sessionManager) {
         this.sessionManager = sessionManager;
+        this.gatewayManager = new GatewayManager();
     }
 
     @Override
@@ -58,15 +55,23 @@ public class ServerMessageHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof InnerMessage) {
+        if (msg instanceof GateMessage) {
+
+            GateMessage message = (GateMessage) msg;
+            if (message.getMessageType() != MessageType.REQUEST) {
+                log.error("网关服务收到非请求消息[{}]", message.getMessageType());
+                // 释放请求消息
+                ReferenceCountUtil.release(msg);
+                return;
+            }
 
             Channel channel = ctx.channel();
             Session session = sessionManager.getSession(channel);
-            InnerMessage message = (InnerMessage) msg;
-            dispatcher.dispatcher(message, session);
+            // 消息处理
+            gatewayManager.forward(message, session);
+
         }else {
             ctx.fireChannelRead(msg);
         }
-
     }
 }

@@ -11,12 +11,6 @@ import java.lang.reflect.InvocationTargetException;
 public interface MethodInvokeProcessor {
 
     /**
-     * 消息是否是转发
-     * @return
-     */
-    boolean isForward();
-
-    /**
      * @return 是否需要检查Channel身份标识id
      */
     boolean isIdentity();

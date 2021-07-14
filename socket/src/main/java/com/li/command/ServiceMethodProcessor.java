@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.parser.Feature;
+import com.jsoniter.JsonIterator;
+import com.jsoniter.any.Any;
 import com.li.session.Session;
 import jdk.nashorn.internal.ir.annotations.Ignore;
 
@@ -49,10 +51,6 @@ public class ServiceMethodProcessor implements MethodInvokeProcessor {
         }
     }
 
-    @Override
-    public boolean isForward() {
-        return false;
-    }
 
     @Override
     public boolean isIdentity() {
@@ -67,7 +65,8 @@ public class ServiceMethodProcessor implements MethodInvokeProcessor {
 
         String typeName = session.getClass().getTypeName();
 
-        JSONObject object = JSON.parseObject(Arrays.toString(body));
+        // jsoniter 序列化
+        Any any = JsonIterator.deserialize(body);
         for (int i = 0; i < length; i++ ){
             ParameterInfo parameterInfo = params[i];
             if (parameterInfo.isIdentity()) {
@@ -81,10 +80,7 @@ public class ServiceMethodProcessor implements MethodInvokeProcessor {
                     args[i] = session;
                     continue;
                 }
-
-                JSONObject obj = object.getJSONObject(name);
-
-                args[i] = JSONObject.parseObject(obj.toJSONString(), type);
+                args[i] = any.get(name).bindTo(type);
             }
         }
 

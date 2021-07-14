@@ -43,6 +43,10 @@ public class CaffeineCacheManager<PK extends Comparable<PK> & Serializable
                 .build();
     }
 
+    @Override
+    public T put(PK id, T entity) {
+        return null;
+    }
 
     @Override
     public T load(PK id) {

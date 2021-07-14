@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 
 /**
- * @Description 心跳检测
- * @Author li-yuanwen
- * @Date 2020/4/11 8:11
+ * @description 心跳检测
+ * @author li-yuanwen
+ * @date 2020/4/11 8:11
  */
 @Slf4j
 @ChannelHandler.Sharable
